@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Analytics</title>
+    <style>
+        @import url('https://fonts.cdnfonts.com/css/sf-pro-display');
+        
+        body {
+            background-color: black;
+            color: #F5F5DC;
+            font-family: 'SF Pro Display', sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        .home-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            transition: transform 0.3s ease;
+            cursor: pointer;
+            text-decoration: none;
+            text-align: center;
+        }
+
+        .home-button:hover {
+            transform: scale(1.1);
+        }
+
+        .home-button img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            margin-bottom: 5px;
+        }
+
+        .home-button .logo-text {
+            display: block;
+            color: #E6E6FA;
+            font-size: 12px;
+            font-weight: bold;
+            margin-top: 5px;
+            font-family: 'SF Pro Display', sans-serif;
+        }
+
+        .nav {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+        }
+
+        .nav a {
+            color: #F5F5DC;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 15px;
+            background-color: #2A2A2A;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+
+        .nav a:hover {
+            transform: scale(1.05);
+        }
+
+        .stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .star {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: rgba(245, 245, 220, 0.5);
+            border-radius: 50%;
+            animation: fall linear infinite;
+        }
+
+        @keyframes fall {
+            0% {
+                transform: translateY(-10px) translateX(0);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh) translateX(var(--x-offset));
+                opacity: 0;
+            }
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 1;
+            margin-top: -100px;  /* This will shift everything up by 100px while maintaining center alignment */
+        }
+
+        .container {
+            text-align: center;
+        }
+
+        .title-box {
+            background-color: #2A2A2A;
+            padding: 20px 100px;  /* Increased width with same height */
+            border-radius: 15px;
+            margin-bottom: 20px;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .about-box {
+            background-color: #2A2A2A;
+            padding: 30px 40px;
+            border-radius: 15px;
+            margin: 20px;
+            max-width: 800px;
+            text-align: left;
+        }
+
+        .team-section {
+            margin-top: 30px;
+        }
+
+        .team-member {
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: rgba(74, 59, 110, 0.2);
+            border-radius: 10px;
+        }
+
+        .team-member h3 {
+            margin: 0 0 10px 0;
+            color: #F5F5DC;
+        }
+
+        .team-member p {
+            margin: 5px 0;
+            color: #F5F5DC;
+        }
+
+        .bio {
+            font-style: italic;
+            color: rgba(245, 245, 220, 0.8);
+        }
+
+        .login-box {
+            background-color: #4A3B6E;
+            padding: 15px 15px;  /* Decreased width with same height */
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .login-box a {
+            color: transparent;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .login-box:hover a {
+            color: #F5F5DC;
+        }
+
+        @keyframes float {
+            0% { transform: translate(0, 0); }
+            25% { transform: translate(5px, -5px); }
+            50% { transform: translate(0, -8px); }
+            75% { transform: translate(-5px, -5px); }
+            100% { transform: translate(0, 0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="stars" id="stars"></div>
+    <a href="/" class="home-button">
+        <img src="/static/images/grid-circle.png" alt="Home">
+        <span class="logo-text">Liminal.</span>
+    </a>
+    <nav class="nav">
+        <a href="{% url 'about' %}">About Us</a>
+    </nav>
+    <main>
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <script>
+        function createStars() {
+            const starsContainer = document.getElementById('stars');
+            const numberOfStars = 20;
+
+            for (let i = 0; i < numberOfStars; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                
+                star.style.left = Math.random() * 100 + '%';
+                const duration = 3 + Math.random() * 4;
+                star.style.animationDuration = duration + 's';
+                star.style.animationDelay = Math.random() * 5 + 's';
+                const xOffset = (Math.random() - 0.5) * 100;
+                star.style.setProperty('--x-offset', xOffset + 'px');
+                
+                starsContainer.appendChild(star);
+            }
+        }
+
+        // Initialize
+        createStars();
+    </script>
+</body>
+</html> 

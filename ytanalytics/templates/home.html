@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="title-box">
+        <h2 style="margin: 0; font-weight: bold;">Ready To Find Your Liminal State?</h2>
+    </div>
+    <div class="login-box">
+        <a href="{% url 'social:begin' 'google-oauth2' %}">Sign In</a>
+    </div>
+</div>
+{% endblock %} 
