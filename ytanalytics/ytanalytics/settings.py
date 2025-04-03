@@ -28,13 +28,13 @@ SECRET_KEY = "django-insecure-1$lomwfpkp*s9ta&&q4i5dx$qi!)r3w9hg4v!b_pu+!056olx(
 SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = config('SOCIAL_AUTH_GOOGLE_OAUTH2_KEY')
 SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = config('SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET')
 SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = ['email', 'profile', 'https://www.googleapis.com/auth/youtube.readonly']
-SOCIAL_AUTH_GOOGLE_OAUTH2_REDIRECT_URI = 'http://localhost:8000/complete/google-oauth2/'  # This URI should match what you have in Google Developer Console
+SOCIAL_AUTH_GOOGLE_OAUTH2_REDIRECT_URI = 'http://127.0.0.1:8000/auth/login/google-oauth2/'  # This URI should match what you have in Google Developer Console
 
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['navid.click', 'www.navid.click', '162.243.23.109', '127.0.0.1']
 
 
 # Application definition
@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     'social_django',
+    'dashboard',
 ]
 
 # Authentication Settings
@@ -55,10 +56,30 @@ AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
 )
 
-LOGIN_URL = 'social:begin'  # This will use the Google OAuth login route
-LOGIN_REDIRECT_URL = '/dashboard/'  # Where to redirect after successful login
-LOGOUT_REDIRECT_URL = '/'  # Where to redirect after logout
+LOGIN_URL = 'auth/login/google-oauth2/'  # This will use the Google OAuth login route
+LOGIN_REDIRECT_URL = '/dashboard/'  # Changed this line to redirect to dashboard
+LOGOUT_REDIRECT_URL = '/home/'  # Changed this line to redirect to home
 
+# Social Auth Settings
+SOCIAL_AUTH_PIPELINE = (
+    'social_core.pipeline.social_auth.social_details',
+    'social_core.pipeline.social_auth.social_uid',
+    'social_core.pipeline.social_auth.auth_allowed',
+    'social_core.pipeline.social_auth.social_user',
+    'social_core.pipeline.user.get_username',
+    'social_core.pipeline.user.create_user',
+    'social_core.pipeline.social_auth.associate_user',
+    'social_core.pipeline.social_auth.load_extra_data',
+    'social_core.pipeline.user.user_details',
+)
+
+# Logout configuration
+SOCIAL_AUTH_DISCONNECT_PIPELINE = (
+    'social_core.pipeline.disconnect.allowed_to_disconnect',
+    'social_core.pipeline.disconnect.get_entries',
+    'social_core.pipeline.disconnect.revoke_tokens',
+    'social_core.pipeline.disconnect.disconnect',
+)
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

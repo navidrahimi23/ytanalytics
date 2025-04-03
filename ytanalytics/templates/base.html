@@ -54,27 +54,6 @@
             font-family: 'SF Pro Display', sans-serif;
         }
 
-        .nav {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 100;
-        }
-
-        .nav a {
-            color: #F5F5DC;
-            text-decoration: none;
-            padding: 12px 24px;
-            border-radius: 15px;
-            background-color: #2A2A2A;
-            transition: all 0.3s ease;
-            font-weight: bold;
-        }
-
-        .nav a:hover {
-            transform: scale(1.05);
-        }
-
         .stars {
             position: fixed;
             top: 0;
@@ -119,7 +98,7 @@
             justify-content: center;
             position: relative;
             z-index: 1;
-            margin-top: -100px;  /* This will shift everything up by 100px while maintaining center alignment */
+            margin-top: -100px;
         }
 
         .container {
@@ -128,7 +107,7 @@
 
         .title-box {
             background-color: #2A2A2A;
-            padding: 20px 100px;  /* Increased width with same height */
+            padding: 20px 100px;
             border-radius: 15px;
             margin-bottom: 20px;
             animation: float 6s ease-in-out infinite;
@@ -171,7 +150,7 @@
 
         .login-box {
             background-color: #4A3B6E;
-            padding: 15px 15px;  /* Decreased width with same height */
+            padding: 15px 15px;
             border-radius: 12px;
             transition: all 0.3s ease;
         }
@@ -202,9 +181,6 @@
         <img src="/static/images/grid-circle.png" alt="Home">
         <span class="logo-text">Liminal.</span>
     </a>
-    <nav class="nav">
-        <a href="{% url 'about' %}">About Us</a>
-    </nav>
     <main>
         {% block content %}
         {% endblock %}

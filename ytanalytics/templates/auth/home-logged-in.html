@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<style>
+    .dashboard-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: black;
+        overflow: hidden;
+    }
+
+    .star {
+        position: absolute;
+        background: rgba(245, 245, 220, 0.8);
+        border-radius: 50%;
+        animation: twinkle 2s infinite;
+    }
+
+    @keyframes twinkle {
+        0%, 100% { opacity: 0.3; }
+        50% { opacity: 1; }
+    }
+
+    .top-right-container {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        display: flex;
+        align-items: center;
+        z-index: 100;
+    }
+
+    .settings-container {
+        position: relative;
+    }
+
+    .settings-icon {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+        transition: transform 0.3s ease;
+        filter: invert(93%) sepia(19%) saturate(297%) hue-rotate(7deg) brightness(103%) contrast(90%);
+        padding: 5px;
+    }
+
+    .settings-icon:hover {
+        transform: scale(1.1);
+    }
+
+    .dropdown-menu {
+        position: absolute;
+        top: 100%;
+        right: 0;
+        margin-top: 10px;
+        background-color: rgba(211, 211, 211, 0.9);
+        border-radius: 8px;
+        padding: 8px 0;
+        display: none;
+        min-width: 120px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .dropdown-menu.show {
+        display: block;
+    }
+
+    .logout-button {
+        padding: 12px 24px;
+        background: none;
+        color: #2A2A2A;
+        border: none;
+        font-family: 'SF Pro Display', sans-serif;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        white-space: nowrap;
+        display: block;
+        width: calc(100% - 48px);
+        text-align: center;
+    }
+
+    .logout-button:hover {
+        transform: translateY(-2px);
+        color: #000;
+    }
+</style>
+
+<div class="dashboard-container" id="starContainer">
+    <!-- Stars will be added by JavaScript -->
+</div>
+
+<div class="top-right-container">
+    <div class="settings-container">
+        <img src="{% static 'images/settings.png' %}" alt="Settings" class="settings-icon" id="settingsIcon">
+        <div class="dropdown-menu" id="settingsMenu">
+            <a href="{% url 'logout' %}" class="logout-button">Logout</a>
+        </div>
+    </div>
+</div>
+
+<script>
+    function createStars() {
+        const container = document.getElementById('starContainer');
+        const numberOfStars = 200;
+
+        for (let i = 0; i < numberOfStars; i++) {
+            const star = document.createElement('div');
+            star.className = 'star';
+            
+            const x = Math.random() * 100;
+            const y = Math.random() * 100;
+            const size = 1 + Math.random() * 2;
+            const delay = Math.random() * 2;
+            
+            star.style.left = `${x}%`;
+            star.style.top = `${y}%`;
+            star.style.width = `${size}px`;
+            star.style.height = `${size}px`;
+            star.style.animationDelay = `${delay}s`;
+            
+            container.appendChild(star);
+        }
+    }
+
+    // Initialize stars
+    createStars();
+
+    // Settings menu click functionality
+    const settingsIcon = document.getElementById('settingsIcon');
+    const settingsMenu = document.getElementById('settingsMenu');
+
+    // Toggle menu on settings icon click
+    settingsIcon.addEventListener('click', function(event) {
+        event.stopPropagation();
+        settingsMenu.classList.toggle('show');
+    });
+
+    // Close menu when clicking anywhere else on the page
+    document.addEventListener('click', function(event) {
+        if (!settingsMenu.contains(event.target) && !settingsIcon.contains(event.target)) {
+            settingsMenu.classList.remove('show');
+        }
+    });
+
+    // Prevent menu from closing when clicking inside it
+    settingsMenu.addEventListener('click', function(event) {
+        event.stopPropagation();
+    });
+</script>
+{% endblock %} 

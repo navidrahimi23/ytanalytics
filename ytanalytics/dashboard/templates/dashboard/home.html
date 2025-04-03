@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="dashboard-container">
+    <h1 class="dashboard-title">Ready To Enter Your Liminal State?</h1>
+    <div class="dashboard-content">
+        <div class="login-button">
+            <a href="{% url 'social:begin' 'google-oauth2' %}?next=/dashboard/">Sign In with Google</a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .dashboard-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 80vh;
+        padding: 20px;
+    }
+
+    .dashboard-title {
+        font-size: 2.5rem;
+        color: #F5F5DC;
+        margin-bottom: 30px;
+        font-weight: bold;
+        text-align: center;
+        opacity: 0;
+        animation: fadeIn 1s ease forwards;
+    }
+
+    .dashboard-content {
+        background-color: rgba(74, 59, 110, 0.3);
+        padding: 20px 40px;
+        border-radius: 15px;
+        width: 90%;
+        max-width: 600px;
+        backdrop-filter: blur(10px);
+        opacity: 0;
+        animation: slideUp 1s ease forwards;
+        animation-delay: 0.3s;
+        position: relative;
+        min-height: 45px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+    }
+
+    .dashboard-content:hover {
+        background-color: rgba(74, 59, 110, 0.5);
+    }
+
+    .login-button {
+        opacity: 0;
+        transform: scale(0.9);
+        transition: all 0.3s ease;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+
+    .dashboard-content:hover .login-button {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+
+    .login-button a {
+        display: inline-block;
+        padding: 12px 24px;
+        background-color: #4A3B6E;
+        color: #F5F5DC;
+        text-decoration: none;
+        border-radius: 8px;
+        font-weight: bold;
+        transition: all 0.3s ease;
+    }
+
+    .login-button a:hover {
+        background-color: #5A4B7E;
+        transform: translateY(-2px);
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>
+{% endblock %} 

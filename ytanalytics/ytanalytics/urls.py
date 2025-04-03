@@ -17,14 +17,16 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import path, include
-from django.views.generic import RedirectView
-from django.contrib.auth.views import LogoutView
+from django.views.generic import RedirectView, TemplateView
+from django.contrib.auth.decorators import login_required
+from dashboard.views import custom_logout, home_view
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('auth/', include('social_django.urls', namespace='social')),  # Handles Google OAuth login
+    path('dashboard/', login_required(TemplateView.as_view(template_name='auth/dashboard.html')), name='dashboard'),  # Dashboard for authenticated users
     path('accounts/', include('django.contrib.auth.urls')),  # Django authentication URLs
-    path('dashboard/', include('dashboard.urls')),  # Dashboard route for your app
-    path('logout/', LogoutView.as_view(next_page='/'), name='logout'),  # Logout URL
-    path('', RedirectView.as_view(url='/dashboard/', permanent=True)),  # Redirect root to dashboard
+    path('home/', home_view, name='home'),  # Smart home route that handles both authenticated and unauthenticated users
+    path('logout/', custom_logout, name='logout'),  # Custom logout view
+    path('', RedirectView.as_view(url='/home/', permanent=True)),  # Redirect root to home
 ]
