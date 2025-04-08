@@ -1,12 +1,377 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container">
-    <div class="title-box">
-        <h2 style="margin: 0; font-weight: bold;">Ready To Find Your Liminal State?</h2>
+<div class="simple-container">
+    <!-- Top navigation bar -->
+    <div class="top-nav">
+        <a href="{% url 'home' %}" class="liminal-brand">
+            <img src="/static/images/grid-circle.png" alt="Liminal" class="liminal-logo">
+            <span class="liminal-text">Liminal.</span>
+        </a>
     </div>
-    <div class="login-box">
-        <a href="{% url 'social:begin' 'google-oauth2' %}">Sign In</a>
+    
+    <!-- Main content -->
+    <div class="main-content">
+        <h2 class="main-title">Ready To Find Your Liminal State?</h2>
+        <div class="login-button-container">
+            <a href="#" id="openLoginModal" class="login-btn">Sign In</a>
+        </div>
     </div>
 </div>
+
+<!-- Login Modal -->
+<div id="loginModal" class="modal-overlay">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 class="modal-title">Login to Liminal</h2>
+            <button class="modal-close" id="closeLoginModal">×</button>
+        </div>
+        <div class="modal-content">
+            <div class="login-options">
+                <a href="{% url 'social:begin' 'google-oauth2' %}" class="google-signin-btn">
+                    <i class="fab fa-google"></i> Continue with Google
+                </a>
+                <div class="login-divider">
+                    <span>or</span>
+                </div>
+                <form method="post" action="{% url 'login' %}" class="login-form">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <input type="text" name="username" id="id_username" placeholder="Enter your username" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="password" name="password" id="id_password" placeholder="Enter your password" required>
+                    </div>
+                    <button type="submit" class="regular-signin-btn">Continue</button>
+                </form>
+                <div class="signup-link">
+                    <p>Don't have an account? <a href="{% url 'signup' %}">Create one</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Override styles from base.html */
+    .stars {
+        display: none;
+    }
+    
+    body {
+        background-color: #000000;
+        color: #F5F5DC;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+    }
+    
+    /* Simple container styles */
+    .simple-container {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+    }
+    
+    /* Top navigation */
+    .top-nav {
+        padding: 20px;
+        display: flex;
+        align-items: center;
+    }
+    
+    .liminal-brand {
+        display: flex;
+        align-items: center;
+        text-decoration: none;
+        transition: transform 0.3s ease;
+    }
+    
+    .liminal-brand:hover {
+        transform: scale(1.05);
+    }
+    
+    .liminal-logo {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        margin-right: 8px;
+    }
+    
+    .liminal-text {
+        font-size: 20px;
+        font-weight: bold;
+        color: #d8c5f2;
+        letter-spacing: 0.5px;
+    }
+    
+    /* Main content */
+    .main-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        margin-bottom: 40px;
+    }
+    
+    .main-title {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #F5F5DC;
+        margin-bottom: 40px;
+        text-align: center;
+    }
+    
+    .login-button-container {
+        display: flex;
+        justify-content: center;
+    }
+    
+    .login-btn {
+        display: inline-block;
+        padding: 15px 40px;
+        background: linear-gradient(45deg, #4A3B6E, #6a5aad);
+        color: #F5F5DC;
+        text-decoration: none;
+        border-radius: 8px;
+        font-weight: bold;
+        font-size: 1.1rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    }
+    
+    .login-btn:hover {
+        background: linear-gradient(45deg, #5a4b7e, #7a6abd);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    /* Modal styles */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.7);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+    }
+
+    .modal {
+        position: relative;
+        width: 90%;
+        max-width: 400px;
+        background-color: #1e1e1e;
+        border-radius: 15px;
+        padding: 0;
+        color: #F5F5DC;
+        animation: modalFadeIn 0.3s ease;
+        overflow: hidden;
+    }
+
+    @keyframes modalFadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px;
+        background-color: rgba(74, 59, 110, 0.2);
+        border-bottom: 1px solid rgba(245, 245, 220, 0.1);
+    }
+
+    .modal-title {
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin: 0;
+        color: #F5F5DC;
+    }
+
+    .modal-close {
+        font-size: 24px;
+        color: #F5F5DC;
+        background: none;
+        border: none;
+        cursor: pointer;
+        transition: transform 0.3s ease;
+    }
+
+    .modal-close:hover {
+        transform: scale(1.2);
+    }
+
+    .modal-content {
+        padding: 30px;
+    }
+
+    .login-options {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 15px;
+        width: 100%;
+    }
+
+    .login-form {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .form-group {
+        width: 100%;
+    }
+
+    .form-group input {
+        width: 100%;
+        padding: 12px;
+        border-radius: 8px;
+        border: 1px solid rgba(245, 245, 220, 0.3);
+        background-color: rgba(30, 30, 30, 0.9);
+        color: #F5F5DC;
+        font-family: 'SF Pro Display', sans-serif;
+        box-sizing: border-box;
+    }
+
+    .form-group input:focus {
+        outline: none;
+        border-color: #4A3B6E;
+    }
+
+    .google-signin-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        padding: 12px;
+        background-color: #ffffff;
+        color: #757575;
+        border-radius: 8px;
+        font-size: 1rem;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+    }
+
+    .google-signin-btn i {
+        margin-right: 10px;
+        color: #4285F4;
+        font-size: 1.2rem;
+    }
+
+    .google-signin-btn:hover {
+        background-color: #f5f5f5;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .regular-signin-btn {
+        width: 100%;
+        padding: 12px;
+        background: linear-gradient(45deg, #4A3B6E, #6a5aad);
+        color: #F5F5DC;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .regular-signin-btn:hover {
+        background: linear-gradient(45deg, #5a4b7e, #7a6abd);
+        box-shadow: 0 2px 8px rgba(106, 90, 173, 0.5);
+    }
+
+    .login-divider {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        margin: 15px 0;
+    }
+
+    .login-divider::before,
+    .login-divider::after {
+        content: "";
+        flex: 1;
+        border-bottom: 1px solid rgba(245, 245, 220, 0.2);
+    }
+
+    .login-divider span {
+        margin: 0 10px;
+        color: rgba(245, 245, 220, 0.6);
+        font-size: 0.9rem;
+    }
+
+    .signup-link {
+        margin-top: 15px;
+        text-align: center;
+    }
+
+    .signup-link p {
+        color: rgba(245, 245, 220, 0.7);
+        font-size: 0.9rem;
+    }
+
+    .signup-link a {
+        color: #6a5aad;
+        text-decoration: none;
+        font-weight: 500;
+    }
+
+    .signup-link a:hover {
+        text-decoration: underline;
+    }
+
+    @media (max-width: 768px) {
+        .main-title {
+            font-size: 1.8rem;
+        }
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const openModalBtn = document.getElementById('openLoginModal');
+        const closeModalBtn = document.getElementById('closeLoginModal');
+        const modal = document.getElementById('loginModal');
+        
+        // Open modal when clicking the Sign In button
+        openModalBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden'; // Prevent scrolling while modal is open
+        });
+        
+        // Close modal when clicking the X button
+        closeModalBtn.addEventListener('click', function() {
+            modal.style.display = 'none';
+            document.body.style.overflow = 'auto'; // Re-enable scrolling
+        });
+        
+        // Close modal when clicking outside of it
+        window.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                modal.style.display = 'none';
+                document.body.style.overflow = 'auto'; // Re-enable scrolling
+            }
+        });
+    });
+</script>
 {% endblock %} 

@@ -1,0 +1,509 @@
+{% extends 'auth/base_auth.html' %}
+{% load static %}
+
+{% block title %}Statistics | Liminal Analytics{% endblock %}
+
+{% block auth_content %}
+{% if not user.userprofile.youtube_connected %}
+<div class="bg-[rgba(30,30,30,0.6)] backdrop-blur-md rounded-xl p-8 mb-8 border border-[rgba(245,245,220,0.1)] text-center max-w-2xl mx-auto mt-12">
+    <div class="text-center">
+        <i class="fas fa-chart-line text-5xl text-purple-400 mb-4"></i>
+        <h2 class="text-2xl font-bold text-white mb-4">Connect to See Your Statistics</h2>
+        <p class="text-gray-300 mb-6">Connect your YouTube channel to view detailed analytics and track your performance over time.</p>
+        <button onclick="openConnectModal()" 
+                class="inline-flex items-center px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors">
+            <i class="fab fa-youtube mr-2"></i>
+            Connect YouTube Channel
+        </button>
+    </div>
+</div>
+{% else %}
+<div class="container mx-auto px-4 py-8">
+    {% if not user.userprofile.has_analytics_access and needs_analytics_permission %}
+    <div class="bg-[rgba(30,30,30,0.8)] backdrop-blur-md rounded-xl p-8 mb-8 border border-purple-500/30 text-center">
+        <div class="text-center">
+            <i class="fas fa-chart-bar text-5xl text-purple-400 mb-4"></i>
+            <h2 class="text-2xl font-bold text-white mb-4">Unlock Full Analytics Power</h2>
+            <p class="text-gray-300 mb-6">You've connected your YouTube channel, but to see detailed analytics, we need one more permission. This allows us to fetch your channel's performance data.</p>
+            <div class="flex flex-col md:flex-row items-center justify-center gap-4">
+                <a href="{% url 'grant_analytics_access' %}" 
+                   class="inline-flex items-center px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors">
+                    <i class="fas fa-unlock mr-2"></i>
+                    Harness Liminal's Full Power
+                </a>
+                <div class="relative group">
+                    <button class="inline-flex items-center px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-colors">
+                        <i class="fas fa-question-circle mr-2"></i>
+                        Why we ask?
+                    </button>
+                    <div class="hidden group-hover:block absolute z-10 w-72 p-4 mt-2 bg-gray-800 rounded-lg shadow-lg border border-gray-700 text-left">
+                        <h4 class="font-semibold text-white mb-2">About Analytics Permissions</h4>
+                        <p class="text-sm text-gray-300 mb-2">The YouTube Analytics permission only grants us <strong>read-only</strong> access to your channel statistics.</p>
+                        <p class="text-sm text-gray-300">We can't post, edit videos, or make any changes to your channel. This permission just lets us show you detailed performance metrics.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold text-[#F5F5DC]">Channel Analytics</h1>
+        <div class="flex items-center">
+            <label for="time-range" class="mr-2 text-gray-300">Time Range:</label>
+            <select id="time-range" class="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-gray-200">
+                <option value="all">All Time</option>
+                <option value="1">1 Day</option>
+                <option value="10">10 Days</option>
+                <option value="30" selected>1 Month</option>
+                <option value="180">6 Months</option>
+                <option value="365">1 Year</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <!-- Subscribers -->
+        <div class="bg-gray-800 rounded-lg p-6 shadow">
+            <div class="flex items-center justify-between mb-2">
+                <h3 class="text-lg font-semibold text-gray-300">Subscribers</h3>
+                <span class="text-xs px-2 py-1 rounded bg-purple-900 text-purple-300">Total</span>
+            </div>
+            <div class="flex items-end">
+                <span id="total-subscribers" class="text-3xl font-bold text-white stat-value">0</span>
+                <span id="subscriber-change" class="ml-2 text-sm text-green-500">+0</span>
+            </div>
+        </div>
+
+        <!-- Views -->
+        <div class="bg-gray-800 rounded-lg p-6 shadow">
+            <div class="flex items-center justify-between mb-2">
+                <h3 class="text-lg font-semibold text-gray-300">Views</h3>
+                <span class="text-xs px-2 py-1 rounded bg-blue-900 text-blue-300">Total</span>
+            </div>
+            <div class="flex items-end">
+                <span id="total-views" class="text-3xl font-bold text-white stat-value">0</span>
+                <span id="view-change" class="ml-2 text-sm text-green-500">+0</span>
+            </div>
+        </div>
+
+        <!-- Watch Time -->
+        <div class="bg-gray-800 rounded-lg p-6 shadow">
+            <div class="flex items-center justify-between mb-2">
+                <h3 class="text-lg font-semibold text-gray-300">Watch Time</h3>
+                <span class="text-xs px-2 py-1 rounded bg-green-900 text-green-300">Hours</span>
+            </div>
+            <div class="flex items-end">
+                <span id="total-watch-time" class="text-3xl font-bold text-white stat-value">0</span>
+                <span id="watch-time-change" class="ml-2 text-sm text-green-500">+0</span>
+            </div>
+        </div>
+
+        <!-- Estimated Likes -->
+        <div class="bg-gray-800 rounded-lg p-6 shadow">
+            <div class="flex items-center justify-between mb-2">
+                <h3 class="text-lg font-semibold text-gray-300">Likes</h3>
+                <span class="text-xs px-2 py-1 rounded bg-red-900 text-red-300">Estimated</span>
+            </div>
+            <div class="flex items-end">
+                <span id="total-likes" class="text-3xl font-bold text-white stat-value">0</span>
+                <span id="like-change" class="ml-2 text-sm text-green-500">+0</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Views Over Time -->
+        <div class="bg-gray-800 rounded-lg p-6 shadow">
+            <h3 class="text-lg font-semibold text-gray-300 mb-4">Views Over Time</h3>
+            <div class="h-64">
+                <canvas id="viewsChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Subscribers Over Time -->
+        <div class="bg-gray-800 rounded-lg p-6 shadow">
+            <h3 class="text-lg font-semibold text-gray-300 mb-4">Subscribers Over Time</h3>
+            <div class="h-64">
+                <canvas id="subscribersChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Watch Time Over Time -->
+        <div class="bg-gray-800 rounded-lg p-6 shadow">
+            <h3 class="text-lg font-semibold text-gray-300 mb-4">Watch Time (Hours) Over Time</h3>
+            <div class="h-64">
+                <canvas id="watchTimeChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Data Source Note -->
+        <div class="bg-gray-800 rounded-lg p-6 shadow">
+            <h3 class="text-lg font-semibold text-gray-300 mb-4">Performance Insights</h3>
+            <div id="chart-message" class="text-gray-400 text-sm"></div>
+            <div id="mock-data-warning" class="hidden mt-4 p-4 bg-yellow-900/30 text-yellow-200 rounded-lg">
+                <p class="text-sm"><strong>Note:</strong> This data is an approximation based on your channel's performance. 
+                   For full analytics access, grant manager permissions to Liminal when connecting your YouTube account.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Lock Modal -->
+<div class="lock-modal" id="lockModal">
+    <div class="lock-modal-content">
+        <button class="lock-modal-close" onclick="closeLockModal()">×</button>
+        <div class="lock-modal-header">
+            <i class="fas fa-lock lock-modal-icon"></i>
+            <h2 class="lock-modal-title">Analytics Access Required</h2>
+        </div>
+        <div class="lock-modal-body">
+            <p>You haven't granted retention access yet. Unlock to see AI insights based on audience watch behavior.</p>
+            <p>This additional permission helps us analyze where viewers drop off, allowing us to provide smarter content recommendations.</p>
+        </div>
+        <a href="{% url 'grant_analytics_access' %}" class="unlock-button">
+            <i class="fas fa-lock-open"></i> Grant Analytics Access
+        </a>
+    </div>
+</div>
+
+{% block extra_js %}
+{% if user.userprofile.youtube_connected %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const timeRangeSelect = document.getElementById('time-range');
+        let viewsChart, subscribersChart, watchTimeChart;
+        
+        function formatNumber(num) {
+            if (num >= 1000000) {
+                return (num / 1000000).toFixed(1) + 'M';
+            } else if (num >= 1000) {
+                return (num / 1000).toFixed(1) + 'K';
+            }
+            return num.toString();
+        }
+        
+        function updateStats(data) {
+            // Update summary stats
+            document.getElementById('total-subscribers').textContent = formatNumber(data.subscribers);
+            document.getElementById('subscriber-change').textContent = (data.subscriber_change >= 0 ? '+' : '') + formatNumber(data.subscriber_change);
+            document.getElementById('subscriber-change').className = data.subscriber_change >= 0 ? 'ml-2 text-sm text-green-500' : 'ml-2 text-sm text-red-500';
+            
+            document.getElementById('total-views').textContent = formatNumber(data.views);
+            document.getElementById('view-change').textContent = (data.view_change >= 0 ? '+' : '') + formatNumber(data.view_change);
+            document.getElementById('view-change').className = data.view_change >= 0 ? 'ml-2 text-sm text-green-500' : 'ml-2 text-sm text-red-500';
+            
+            document.getElementById('total-watch-time').textContent = formatNumber(data.watch_time);
+            document.getElementById('watch-time-change').textContent = (data.watch_time_change >= 0 ? '+' : '') + formatNumber(data.watch_time_change);
+            document.getElementById('watch-time-change').className = data.watch_time_change >= 0 ? 'ml-2 text-sm text-green-500' : 'ml-2 text-sm text-red-500';
+            
+            document.getElementById('total-likes').textContent = formatNumber(data.likes);
+            document.getElementById('like-change').textContent = (data.like_change >= 0 ? '+' : '') + formatNumber(data.like_change);
+            document.getElementById('like-change').className = data.like_change >= 0 ? 'ml-2 text-sm text-green-500' : 'ml-2 text-sm text-red-500';
+            
+            // Show mock data warning if needed
+            document.getElementById('mock-data-warning').classList.toggle('hidden', !data.is_mock_data);
+            
+            // Update chart data
+            updateCharts(data);
+            
+            // Update insights
+            updateInsights(data);
+        }
+        
+        function updateInsights(data) {
+            const messageDiv = document.getElementById('chart-message');
+            
+            if (data.dates && data.dates.length > 0) {
+                // Calculate some basic insights
+                let viewsAvg = data.views / data.dates.length;
+                let subsAvg = data.subscribers / data.dates.length;
+                let watchTimeAvg = data.watch_time / data.dates.length;
+                
+                let message = `
+                    <p class="mb-2">Over this period, you averaged:</p>
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li>${formatNumber(viewsAvg.toFixed(1))} views per day</li>
+                        <li>${formatNumber(subsAvg.toFixed(1))} new subscribers per day</li>
+                        <li>${formatNumber(watchTimeAvg.toFixed(1))} hours of watch time per day</li>
+                    </ul>
+                    
+                    <p class="mt-4 mb-2">Performance Trends:</p>
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li>Views: ${data.view_change >= 0 ? 'Increasing' : 'Decreasing'} (${Math.abs(data.view_change)} ${data.view_change >= 0 ? 'more' : 'fewer'} in recent period)</li>
+                        <li>Subscribers: ${data.subscriber_change >= 0 ? 'Growing' : 'Declining'} (${Math.abs(data.subscriber_change)} ${data.subscriber_change >= 0 ? 'more' : 'fewer'} in recent period)</li>
+                        <li>Watch Time: ${data.watch_time_change >= 0 ? 'Increasing' : 'Decreasing'} (${Math.abs(data.watch_time_change)} hours ${data.watch_time_change >= 0 ? 'more' : 'less'} in recent period)</li>
+                    </ul>
+                `;
+                
+                messageDiv.innerHTML = message;
+            } else {
+                messageDiv.innerHTML = '<p>Connect your YouTube channel to see performance insights.</p>';
+            }
+        }
+        
+        function updateCharts(data) {
+            const dates = data.dates || [];
+            const viewsData = data.views_data || [];
+            const watchTimeData = data.watch_time_data || [];
+            const subscribersData = data.subscribers_data || [];
+            
+            // Convert watch time from minutes to hours
+            const watchTimeHours = watchTimeData.map(minutes => minutes / 60);
+            
+            // Initialize or update views chart
+            if (viewsChart) {
+                viewsChart.data.labels = dates;
+                viewsChart.data.datasets[0].data = viewsData;
+                viewsChart.update();
+            } else {
+                const viewsCtx = document.getElementById('viewsChart').getContext('2d');
+                viewsChart = new Chart(viewsCtx, {
+                    type: 'line',
+                    data: {
+                        labels: dates,
+                        datasets: [{
+                            label: 'Views',
+                            data: viewsData,
+                            fill: true,
+                            backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                            borderColor: 'rgba(59, 130, 246, 1)',
+                            tension: 0.1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    color: 'rgba(245, 245, 220, 0.7)'
+                                },
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.05)'
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    color: 'rgba(245, 245, 220, 0.7)',
+                                    maxRotation: 45,
+                                    minRotation: 45
+                                },
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.05)'
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: 'rgba(245, 245, 220, 0.9)'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Initialize or update subscribers chart
+            if (subscribersChart) {
+                subscribersChart.data.labels = dates;
+                subscribersChart.data.datasets[0].data = subscribersData;
+                subscribersChart.update();
+            } else {
+                const subscribersCtx = document.getElementById('subscribersChart').getContext('2d');
+                subscribersChart = new Chart(subscribersCtx, {
+                    type: 'line',
+                    data: {
+                        labels: dates,
+                        datasets: [{
+                            label: 'Subscribers Gained',
+                            data: subscribersData,
+                            fill: true,
+                            backgroundColor: 'rgba(147, 51, 234, 0.2)',
+                            borderColor: 'rgba(147, 51, 234, 1)',
+                            tension: 0.1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    color: 'rgba(245, 245, 220, 0.7)'
+                                },
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.05)'
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    color: 'rgba(245, 245, 220, 0.7)',
+                                    maxRotation: 45,
+                                    minRotation: 45
+                                },
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.05)'
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: 'rgba(245, 245, 220, 0.9)'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Initialize or update watch time chart
+            if (watchTimeChart) {
+                watchTimeChart.data.labels = dates;
+                watchTimeChart.data.datasets[0].data = watchTimeHours;
+                watchTimeChart.update();
+            } else {
+                const watchTimeCtx = document.getElementById('watchTimeChart').getContext('2d');
+                watchTimeChart = new Chart(watchTimeCtx, {
+                    type: 'line',
+                    data: {
+                        labels: dates,
+                        datasets: [{
+                            label: 'Watch Time (Hours)',
+                            data: watchTimeHours,
+                            fill: true,
+                            backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                            borderColor: 'rgba(16, 185, 129, 1)',
+                            tension: 0.1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    color: 'rgba(245, 245, 220, 0.7)'
+                                },
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.05)'
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    color: 'rgba(245, 245, 220, 0.7)',
+                                    maxRotation: 45,
+                                    minRotation: 45
+                                },
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.05)'
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: 'rgba(245, 245, 220, 0.9)'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+        
+        // Initial load of statistics
+        fetchStatistics();
+        
+        // Add event listener for the time range dropdown
+        timeRangeSelect.addEventListener('change', function() {
+            fetchStatistics();
+        });
+        
+        function fetchStatistics() {
+            const timeRange = timeRangeSelect.value;
+            const url = `/api/statistics/?days=${timeRange}`;
+            
+            // Show loading state
+            document.querySelectorAll('.stat-value').forEach(el => {
+                el.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            });
+            
+            // Set a timeout to clear loading spinners if the request takes too long
+            const timeoutId = setTimeout(() => {
+                document.querySelectorAll('.stat-value').forEach(el => {
+                    if (el.innerHTML.includes('fa-spin')) {
+                        el.innerHTML = '0';
+                    }
+                });
+                document.getElementById('chart-message').innerHTML = 
+                    `<p class="text-yellow-400">Connection timeout. Please try again.</p>`;
+            }, 10000); // 10 second timeout
+            
+            fetch(url)
+                .then(response => {
+                    clearTimeout(timeoutId);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        // Update the statistics with the data
+                        updateStats(data);
+                        
+                        // Display a message if using mock data
+                        if (data.is_mock_data) {
+                            document.getElementById('mock-data-warning').classList.remove('hidden');
+                        } else {
+                            document.getElementById('mock-data-warning').classList.add('hidden');
+                        }
+                    } else {
+                        console.error('Error fetching statistics:', data.error);
+                        // Clear loading spinners
+                        document.querySelectorAll('.stat-value').forEach(el => {
+                            if (el.innerHTML.includes('fa-spin')) {
+                                el.innerHTML = '0';
+                            }
+                        });
+                        document.getElementById('chart-message').innerHTML = 
+                            `<p class="text-red-400">Error loading statistics: ${data.error || 'Unknown error'}</p>`;
+                    }
+                })
+                .catch(error => {
+                    clearTimeout(timeoutId);
+                    console.error('Error:', error);
+                    // Clear loading spinners
+                    document.querySelectorAll('.stat-value').forEach(el => {
+                        if (el.innerHTML.includes('fa-spin')) {
+                            el.innerHTML = '0';
+                        }
+                    });
+                    document.getElementById('chart-message').innerHTML = 
+                        `<p class="text-red-400">Error connecting to server. Please refresh the page and try again.</p>`;
+                });
+        }
+    });
+    
+    function closeLockModal() {
+        document.getElementById('lockModal').classList.remove('show');
+    }
+    
+    function showLockModal() {
+        document.getElementById('lockModal').classList.add('show');
+    }
+</script>
+{% endif %}
+{% endblock extra_js %}
+{% endblock auth_content %}
+

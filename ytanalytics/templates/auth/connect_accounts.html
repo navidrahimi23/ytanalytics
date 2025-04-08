@@ -1,0 +1,362 @@
+{% extends 'auth/base_auth.html' %}
+{% block content %}
+<div class="connect-accounts-container">
+    <h2>Connect Accounts</h2>
+    
+    <div class="accounts-grid">
+        <!-- YouTube Connection -->
+        <div class="account-card {% if user.userprofile.youtube_connected %}connected{% endif %}">
+            <div class="account-header">
+                <div class="platform-icon youtube">
+                    <i class="fab fa-youtube"></i>
+                </div>
+                <h3>YouTube</h3>
+            </div>
+            <div class="account-body">
+                {% if user.userprofile.youtube_connected %}
+                <button type="button" class="connection-btn connected" data-platform="youtube">
+                    Connected
+                </button>
+                {% else %}
+                <button type="button" class="connect-btn custom-youtube-btn" id="youtubeConnectButton">
+                    Connect
+                </button>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- TikTok Connection -->
+        <div class="account-card {% if user.userprofile.tiktok_connected %}connected{% endif %}">
+            <div class="account-header">
+                <div class="platform-icon tiktok">
+                    <i class="fab fa-tiktok"></i>
+                </div>
+                <h3>TikTok</h3>
+            </div>
+            <div class="account-body">
+                {% if user.userprofile.tiktok_connected %}
+                <button type="button" class="connection-btn connected" data-platform="tiktok">
+                    Connected
+                </button>
+                {% else %}
+                <button type="button" class="connect-btn custom-connect-btn" id="tiktokConnectButton" data-platform="tiktok" data-connect-url="{% url 'connect_tiktok' %}">
+                    Connect
+                </button>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Instagram Connection -->
+        <div class="account-card {% if user.userprofile.instagram_connected %}connected{% endif %}">
+            <div class="account-header">
+                <div class="platform-icon instagram">
+                    <i class="fab fa-instagram"></i>
+                </div>
+                <h3>Instagram</h3>
+            </div>
+            <div class="account-body">
+                {% if user.userprofile.instagram_connected %}
+                <button type="button" class="connection-btn connected" data-platform="instagram">
+                    Connected
+                </button>
+                {% else %}
+                <button type="button" class="connect-btn custom-connect-btn" id="instagramConnectButton" data-platform="instagram" data-connect-url="{% url 'connect_instagram' %}">
+                    Connect
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .connect-accounts-container {
+        padding: 10px 0;
+    }
+    
+    .connect-accounts-container h2 {
+        margin-bottom: 25px;
+        color: #F5F5DC;
+        font-size: 1.8rem;
+        text-align: center;
+    }
+    
+    .accounts-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 20px;
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    @media (min-width: 768px) {
+        .accounts-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+    
+    .account-card {
+        background-color: rgba(30, 30, 30, 0.7);
+        border-radius: 12px;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        border: 1px solid rgba(245, 245, 220, 0.1);
+        display: flex;
+        flex-direction: column;
+        height: 180px; /* Fixed height for consistency */
+    }
+    
+    .account-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3);
+    }
+    
+    .account-card.connected {
+        border: 1px solid rgba(133, 187, 101, 0.4);
+    }
+    
+    .account-header {
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        border-bottom: 1px solid rgba(245, 245, 220, 0.1);
+    }
+    
+    .platform-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
+    
+    .platform-icon.youtube {
+        background: linear-gradient(45deg, #c4302b, #ff0000);
+    }
+    
+    .platform-icon.tiktok {
+        background: linear-gradient(45deg, #000000, #25f4ee);
+    }
+    
+    .platform-icon.instagram {
+        background: linear-gradient(45deg, #405DE6, #5851DB, #833AB4, #C13584, #E1306C, #FD1D1D);
+    }
+    
+    .account-header h3 {
+        margin: 0;
+        color: #F5F5DC;
+        font-size: 1.3rem;
+    }
+    
+    .account-body {
+        padding: 20px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-grow: 1;
+    }
+    
+    /* Shared button styles */
+    .connection-btn, .connect-btn {
+        display: block;
+        width: 100%;
+        padding: 12px 0;
+        border-radius: 8px;
+        font-weight: 600;
+        text-align: center;
+        cursor: pointer;
+        border: 2px solid rgba(245, 245, 220, 0.2);
+        background-color: rgba(40, 40, 40, 0.9);
+        color: #F5F5DC;
+        text-decoration: none;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        max-width: 140px;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+    }
+    
+    .connect-btn:hover, .connection-btn:hover {
+        background-color: rgba(50, 50, 50, 1);
+        transform: translateY(-2px);
+        border-color: rgba(245, 245, 220, 0.4);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+    }
+    
+    .connection-btn.connected {
+        background-color: #43a047;
+        border-color: rgba(133, 187, 101, 0.4);
+    }
+    
+    .connection-btn.connected:hover {
+        background-color: #e53935;
+        border-color: rgba(229, 57, 53, 0.4);
+    }
+    
+    /* Custom YouTube button */
+    .custom-youtube-btn {
+        background-color: #2A2A2A;
+        color: #F5F5DC;
+        border: 2px solid rgba(245, 245, 220, 0.15);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .custom-youtube-btn:hover {
+        background-color: #3A3A3A;
+        border-color: rgba(245, 245, 220, 0.3);
+    }
+    
+    .custom-youtube-btn::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: radial-gradient(circle, rgba(245, 245, 220, 0.1) 0%, transparent 70%);
+        transform: scale(0);
+        opacity: 0;
+        border-radius: 8px;
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0% {
+            transform: scale(0.95);
+            opacity: 0;
+        }
+        50% {
+            transform: scale(1);
+            opacity: 0.2;
+        }
+        100% {
+            transform: scale(0.95);
+            opacity: 0;
+        }
+    }
+    
+    /* Custom connect buttons */
+    .custom-connect-btn {
+        background-color: #2A2A2A;
+        color: #F5F5DC;
+        border: 2px solid rgba(245, 245, 220, 0.15);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .custom-connect-btn:hover {
+        background-color: #3A3A3A;
+        border-color: rgba(245, 245, 220, 0.3);
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Handle text change on hover for connected buttons
+        const connectedBtns = document.querySelectorAll('.connection-btn.connected');
+        
+        connectedBtns.forEach(btn => {
+            // Store original text in a data attribute to make it more reliable
+            btn.setAttribute('data-original-text', btn.textContent.trim());
+            
+            btn.addEventListener('mouseenter', function() {
+                this.textContent = 'Disconnect?';
+            });
+            
+            btn.addEventListener('mouseleave', function() {
+                this.textContent = this.getAttribute('data-original-text');
+            });
+            
+            btn.addEventListener('click', function() {
+                const platform = this.dataset.platform;
+                // Send AJAX request to disconnect
+                fetch(`/disconnect/${platform}/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Reload the page to reflect changes
+                        window.location.reload();
+                    } else {
+                        alert('Failed to disconnect account. Please try again.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred. Please try again.');
+                });
+            });
+        });
+        
+        // Handle YouTube connect button
+        const youtubeConnectBtn = document.getElementById('youtubeConnectButton');
+        if (youtubeConnectBtn) {
+            youtubeConnectBtn.addEventListener('click', function() {
+                // Show loading state
+                const originalText = this.textContent;
+                this.textContent = 'Connecting...';
+                this.style.opacity = '0.7';
+                this.style.pointerEvents = 'none';
+                
+                // Add a slight delay to show the loading state
+                setTimeout(() => {
+                    console.log('Redirecting to YouTube authentication...');
+                    window.location.href = "{% url 'connect_youtube' %}";
+                }, 300);
+            });
+        }
+        
+        // Handle other connect buttons
+        const otherConnectBtns = document.querySelectorAll('.connect-btn:not(#youtubeConnectButton)');
+        otherConnectBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                // Get URL and platform from data attributes
+                const connectUrl = this.dataset.connectUrl;
+                const platform = this.dataset.platform || 'this platform';
+                
+                if (connectUrl) {
+                    // Show loading state
+                    const originalText = this.textContent;
+                    this.textContent = 'Connecting...';
+                    this.style.opacity = '0.7';
+                    this.style.pointerEvents = 'none';
+                    
+                    console.log(`Redirecting to ${platform} authentication...`);
+                    
+                    // Add a slight delay to show the loading state
+                    setTimeout(() => {
+                        window.location.href = connectUrl;
+                    }, 300);
+                }
+            });
+        });
+        
+        // Helper function to get CSRF token
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    });
+</script>
+{% endblock %} 

@@ -1,0 +1,320 @@
+{% extends 'auth/base_auth.html' %}
+{% load static %}
+
+{% block auth_content %}
+<style>
+    .directory-container {
+        max-width: 1000px;
+        margin: 80px auto 40px;
+        padding: 0 20px;
+    }
+
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+
+    .page-title {
+        font-size: 2.2rem;
+        color: #F5F5DC;
+        font-weight: 600;
+    }
+
+    .search-form {
+        display: flex;
+        max-width: 400px;
+        width: 100%;
+        background-color: rgba(30, 30, 30, 0.7);
+        border-radius: 25px;
+        overflow: hidden;
+        border: 1px solid rgba(245, 245, 220, 0.2);
+    }
+
+    .search-input {
+        flex: 1;
+        background: transparent;
+        border: none;
+        padding: 12px 15px;
+        color: #F5F5DC;
+        font-size: 1rem;
+    }
+
+    .search-input:focus {
+        outline: none;
+    }
+
+    .search-button {
+        background-color: #4A3B6E;
+        border: none;
+        color: #F5F5DC;
+        padding: 12px 20px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+
+    .search-button:hover {
+        background-color: #6a5aad;
+    }
+
+    .users-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 25px;
+    }
+
+    .user-card {
+        background-color: rgba(30, 30, 30, 0.7);
+        border-radius: 15px;
+        overflow: hidden;
+        transition: transform 0.3s, box-shadow 0.3s;
+        border: 1px solid rgba(245, 245, 220, 0.1);
+    }
+
+    .user-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        border-color: rgba(245, 245, 220, 0.3);
+    }
+
+    .user-card-header {
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        border-bottom: 1px solid rgba(245, 245, 220, 0.1);
+    }
+
+    .user-card-picture {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-right: 15px;
+        border: 2px solid rgba(245, 245, 220, 0.3);
+    }
+
+    .user-card-initial {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(45deg, #4A3B6E, #6a5aad);
+        color: #F5F5DC;
+        font-weight: bold;
+        font-size: 24px;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        margin-right: 15px;
+    }
+
+    .user-card-info {
+        flex: 1;
+    }
+
+    .user-card-name {
+        font-size: 1.2rem;
+        color: #F5F5DC;
+        margin-bottom: 5px;
+        font-weight: 600;
+    }
+
+    .user-card-username {
+        color: rgba(245, 245, 220, 0.7);
+        font-size: 0.9rem;
+    }
+
+    .user-card-body {
+        padding: 15px 20px;
+    }
+
+    .user-card-bio {
+        color: rgba(245, 245, 220, 0.8);
+        font-size: 0.95rem;
+        margin-bottom: 15px;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-height: 4.5em;
+    }
+
+    .user-card-footer {
+        display: flex;
+        justify-content: flex-end;
+        padding: 15px 20px;
+        border-top: 1px solid rgba(245, 245, 220, 0.1);
+    }
+
+    .view-profile-btn {
+        background-color: #4A3B6E;
+        color: #F5F5DC;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        text-decoration: none;
+        transition: background-color 0.3s;
+    }
+
+    .view-profile-btn:hover {
+        background-color: #6a5aad;
+    }
+
+    .no-results {
+        text-align: center;
+        padding: 40px;
+        background-color: rgba(30, 30, 30, 0.7);
+        border-radius: 15px;
+        color: rgba(245, 245, 220, 0.7);
+    }
+
+    .no-results-icon {
+        font-size: 3rem;
+        margin-bottom: 20px;
+        opacity: 0.6;
+    }
+
+    .search-results-info {
+        margin-bottom: 25px;
+        color: rgba(245, 245, 220, 0.7);
+        font-style: italic;
+    }
+
+    .user-card-youtube {
+        margin-top: 10px;
+        text-align: center;
+    }
+
+    .youtube-card-link {
+        display: inline-flex;
+        align-items: center;
+        color: #FF0000;
+        text-decoration: none;
+        padding: 5px 12px;
+        background-color: rgba(255, 0, 0, 0.1);
+        border-radius: 20px;
+        transition: all 0.3s ease;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+
+    .youtube-card-link:hover {
+        background-color: rgba(255, 0, 0, 0.2);
+    }
+
+    .youtube-card-link i {
+        margin-right: 5px;
+        font-size: 0.9rem;
+    }
+</style>
+
+<div class="dashboard-container">
+    <div class="directory-container">
+        <div class="page-header">
+            <h1 class="page-title">User Directory</h1>
+            
+            <form method="get" class="search-form">
+                <input type="text" name="search" class="search-input" 
+                       placeholder="Search by name or username" 
+                       value="{{ search_query }}">
+                <button type="submit" class="search-button">
+                    <i class="fas fa-search"></i>
+                </button>
+            </form>
+        </div>
+        
+        {% if search_query %}
+            <div class="search-results-info">
+                {% with users.count as total_users %}
+                    Showing {{ total_users }} result{{ total_users|pluralize }} for "{{ search_query }}"
+                {% endwith %}
+            </div>
+        {% endif %}
+        
+        {% if users %}
+            <div class="users-grid">
+                {% for user_obj in users %}
+                    <div class="user-card">
+                        <div class="user-card-header">
+                            {% if user_obj.userprofile.profile_picture %}
+                                <img src="{{ user_obj.userprofile.profile_picture.url }}" 
+                                     alt="{{ user_obj.username }}" 
+                                     class="user-card-picture">
+                            {% else %}
+                                <div class="user-card-initial">{{ user_obj.username.0|upper }}</div>
+                            {% endif %}
+                            
+                            <div class="user-card-info">
+                                <div class="user-card-name">
+                                    {% if user_obj.first_name or user_obj.last_name %}
+                                        {{ user_obj.first_name }} {{ user_obj.last_name }}
+                                    {% else %}
+                                        {{ user_obj.username }}
+                                    {% endif %}
+                                </div>
+                                <div class="user-card-username">@{{ user_obj.username }}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="user-card-body">
+                            {% if user_obj.userprofile.bio %}
+                                <div class="user-card-bio">
+                                    {{ user_obj.userprofile.bio }}
+                                </div>
+                            {% else %}
+                                <div class="user-card-bio">
+                                    No bio available.
+                                </div>
+                            {% endif %}
+
+                            {% if user_obj.userprofile.youtube_channel %}
+                                <div class="user-card-youtube">
+                                    <a href="{% if 'youtube.com' in user_obj.userprofile.youtube_channel %}{{ user_obj.userprofile.youtube_channel }}{% elif 'youtu.be' in user_obj.userprofile.youtube_channel %}{{ user_obj.userprofile.youtube_channel }}{% else %}https://www.youtube.com/channel/{{ user_obj.userprofile.youtube_channel }}{% endif %}" 
+                                       class="youtube-card-link" target="_blank">
+                                        <i class="fab fa-youtube"></i> YouTube Channel
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="user-card-footer">
+                            <a href="{% url 'view_profile' user_obj.username %}" class="view-profile-btn">
+                                View Profile
+                            </a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="no-results">
+                <div class="no-results-icon">
+                    <i class="fas fa-user-slash"></i>
+                </div>
+                <h3>No users found</h3>
+                {% if search_query %}
+                    <p>No users matching "{{ search_query }}" were found.</p>
+                    <a href="{% url 'user_directory' %}" class="view-profile-btn" style="display: inline-block; margin-top: 15px;">
+                        Clear Search
+                    </a>
+                {% else %}
+                    <p>There are no other users in the system yet.</p>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Create stars in the background
+    document.addEventListener('DOMContentLoaded', function() {
+        createStars();
+    });
+</script>
+{% endblock %} 

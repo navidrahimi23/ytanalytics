@@ -1,0 +1,355 @@
+{% extends 'auth/base_auth.html' %}
+{% load static %}
+
+{% block title %}YouTube Channel Search{% endblock %}
+
+{% block auth_content %}
+<div class="content-section">
+    <!-- API Key Status Check -->
+    {% if search_results.error == 'API configuration error' or search_query and not search_results %}
+    <div class="api-error-message">
+        <h3><i class="fas fa-exclamation-triangle"></i> YouTube API Configuration Issue</h3>
+        <p>The YouTube API key appears to be missing or invalid. Please configure a valid API key in your .env file:</p>
+        <pre>YT_API_KEY=your_actual_youtube_api_key</pre>
+        <p>You can get a YouTube API key from the <a href="https://console.developers.google.com/" target="_blank">Google Developer Console</a>.</p>
+        <ol>
+            <li>Create a new project or select an existing one</li>
+            <li>Enable the "YouTube Data API v3"</li>
+            <li>Create credentials (API Key)</li>
+            <li>Add the API key to your .env file</li>
+            <li>Restart the Django server</li>
+        </ol>
+    </div>
+    {% endif %}
+    
+    {% if not search_results %}
+    <div class="search-container search-centered">
+    {% else %}
+    <div class="search-container search-top">
+    {% endif %}
+        <form id="channel-search-form" action="{% url 'youtube_search' %}" method="GET" class="search-form">
+            <div class="input-group">
+                <input 
+                    type="text" 
+                    name="q" 
+                    id="search-input" 
+                    class="form-control" 
+                    placeholder="Enter Channel" 
+                    value="{{ search_query }}"
+                    required
+                >
+                <button type="submit" class="search-button">
+                    <i class="fas fa-search"></i> Search
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    {% if search_results %}
+        <div class="search-results">
+            <h3>Search Results</h3>
+            
+            {% if search_results.error %}
+                <div class="error-message">
+                    <p>{{ search_results.message }}</p>
+                </div>
+            {% else %}
+                {% if search_results.channels %}
+                    <div class="channel-grid">
+                        {% for channel in search_results.channels %}
+                            <div class="channel-card">
+                                <div class="channel-thumbnail">
+                                    <img src="{{ channel.thumbnail }}" alt="{{ channel.title }}">
+                                </div>
+                                <div class="channel-info">
+                                    <h4>{{ channel.title }}</h4>
+                                    <p class="channel-description">{{ channel.description|truncatechars:100 }}</p>
+                                </div>
+                                <div class="channel-actions">
+                                    <a href="{% url 'youtube_channel' channel_id=channel.id %}" class="view-button">
+                                        View Analytics
+                                    </a>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="no-results">No channels found matching your search. Try different keywords.</p>
+                {% endif %}
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+
+<style>
+    /* Content Section Styling */
+    .content-section {
+        max-width: 100%;
+        width: 100%;
+        min-height: 100vh;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        overflow-x: hidden;
+    }
+    
+    /* Search styles */
+    .search-container {
+        max-width: 800px;
+        width: 90%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 10;
+    }
+    
+    .search-centered {
+        position: absolute;
+        top: 40%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+    
+    .search-top {
+        position: relative;
+        top: 0;
+        left: 0;
+        transform: none;
+        margin: 50px auto 20px;
+    }
+    
+    .search-form {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .input-group {
+        display: flex;
+        width: 100%;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+        border-radius: 15px;
+        overflow: hidden;
+        background-color: rgba(30, 30, 30, 0.6);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(245, 245, 220, 0.1);
+    }
+    
+    .form-control {
+        flex: 1;
+        padding: 25px 30px;
+        border-radius: 15px 0 0 15px;
+        border: none;
+        background-color: transparent;
+        color: #F5F5DC;
+        font-size: 20px;
+        transition: all 0.3s ease;
+    }
+    
+    .form-control:focus {
+        outline: none;
+        background-color: rgba(40, 40, 40, 0.5);
+    }
+    
+    .search-button {
+        background-color: #4A3B6E;
+        color: #F5F5DC;
+        border: none;
+        padding: 0 40px;
+        border-radius: 0 15px 15px 0;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        font-weight: 600;
+        font-size: 18px;
+    }
+    
+    .search-button:hover {
+        background-color: #6a5aad;
+        transform: translateY(-2px);
+    }
+    
+    /* Results styles - improved positioning */
+    .search-results {
+        width: 100%;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .search-results h3 {
+        text-align: center;
+        font-size: 1.8rem;
+        margin-bottom: 25px;
+        color: #F5F5DC;
+        position: relative;
+    }
+    
+    .search-results h3:after {
+        content: "";
+        display: block;
+        width: 80px;
+        height: 3px;
+        background: linear-gradient(90deg, #4A3B6E, #6a5aad);
+        margin: 15px auto 0;
+        border-radius: 2px;
+    }
+    
+    .channel-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 20px;
+        margin-top: 20px;
+    }
+    
+    .channel-card {
+        background-color: rgba(30, 30, 30, 0.7);
+        border-radius: 12px;
+        overflow: hidden;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        border: 1px solid rgba(245, 245, 220, 0.1);
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+    }
+    
+    .channel-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+        border-color: rgba(106, 90, 173, 0.4);
+    }
+    
+    .channel-thumbnail {
+        height: 160px;
+        overflow: hidden;
+    }
+    
+    .channel-thumbnail img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.5s ease;
+    }
+    
+    .channel-card:hover .channel-thumbnail img {
+        transform: scale(1.05);
+    }
+    
+    .channel-info {
+        padding: 15px;
+        flex-grow: 1;
+    }
+    
+    .channel-info h4 {
+        margin: 0 0 10px;
+        color: #F5F5DC;
+    }
+    
+    .channel-description {
+        color: rgba(245, 245, 220, 0.7);
+        font-size: 14px;
+        line-height: 1.4;
+        height: 60px;
+        overflow: hidden;
+    }
+    
+    .channel-actions {
+        padding: 0 15px 15px;
+        margin-top: auto;
+    }
+    
+    .view-button {
+        display: block;
+        background-color: #4A3B6E;
+        color: #F5F5DC;
+        text-align: center;
+        padding: 12px;
+        border-radius: 6px;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        font-weight: 500;
+        letter-spacing: 0.5px;
+    }
+    
+    .view-button:hover {
+        background-color: #6a5aad;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+    
+    .error-message {
+        background-color: rgba(255, 107, 107, 0.2);
+        border-left: 4px solid #ff6b6b;
+        padding: 15px;
+        border-radius: 0 8px 8px 0;
+        margin: 20px 0;
+    }
+    
+    .no-results {
+        padding: 20px;
+        text-align: center;
+        color: rgba(245, 245, 220, 0.7);
+        font-style: italic;
+    }
+    
+    /* API Error Message Styling */
+    .api-error-message {
+        background-color: rgba(255, 107, 107, 0.1);
+        border-left: 4px solid #ff6b6b;
+        padding: 20px;
+        border-radius: 0 8px 8px 0;
+        margin: 20px 0 30px;
+        color: rgba(245, 245, 220, 0.9);
+    }
+    
+    .api-error-message h3 {
+        color: #ff6b6b;
+        margin-top: 0;
+    }
+    
+    .api-error-message pre {
+        background-color: rgba(30, 30, 30, 0.7);
+        padding: 10px;
+        border-radius: 5px;
+        overflow-x: auto;
+        margin: 15px 0;
+    }
+    
+    .api-error-message a {
+        color: #6a5aad;
+        text-decoration: underline;
+    }
+    
+    .api-error-message ol {
+        margin-left: 20px;
+    }
+    
+    .api-error-message li {
+        margin-bottom: 8px;
+    }
+    
+    /* Section Header Styling */
+    .section-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    
+    .section-header h2 {
+        font-size: 2.2rem;
+        color: #F5F5DC;
+        margin-bottom: 15px;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+    
+    .section-description {
+        max-width: 700px;
+        margin: 0 auto;
+        font-size: 1.1rem;
+        line-height: 1.6;
+        color: rgba(245, 245, 220, 0.8);
+    }
+</style>
+{% endblock %} 

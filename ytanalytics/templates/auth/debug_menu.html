@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Menu</title>
+    <style>
+        body {
+            background-color: black;
+            color: white;
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        
+        .profile-picture-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #4A3B6E;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+        
+        .dropdown-menu {
+            display: none;
+            background-color: #333;
+            padding: 10px;
+            border-radius: 5px;
+            width: 200px;
+        }
+        
+        .dropdown-menu.show {
+            display: block;
+        }
+        
+        .menu-item {
+            padding: 8px;
+            display: block;
+            color: white;
+            text-decoration: none;
+            margin-bottom: 5px;
+        }
+        
+        .menu-item:hover {
+            background-color: #555;
+        }
+        
+        .debug-section {
+            margin-top: 30px;
+            border: 1px solid #666;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Debug Menu Test</h1>
+    
+    <div class="profile-picture-icon" id="profileButton">
+        U
+    </div>
+    
+    <div class="dropdown-menu" id="profileMenu">
+        <a href="#" class="menu-item">Profile</a>
+        <a href="#" class="menu-item">Settings</a>
+        <a href="#" class="menu-item">Logout</a>
+    </div>
+    
+    <div class="debug-section">
+        <p>Debug information:</p>
+        <pre id="debugOutput"></pre>
+        
+        <button onclick="testMenuToggle()">Test Menu Toggle</button>
+    </div>
+    
+    <script>
+        function log(message) {
+            console.log(message);
+            const debugOutput = document.getElementById('debugOutput');
+            if (debugOutput) {
+                debugOutput.textContent += message + '\n';
+            }
+        }
+        
+        log('Page loaded');
+        
+        // Get elements
+        const profileButton = document.getElementById('profileButton');
+        const profileMenu = document.getElementById('profileMenu');
+        
+        if (profileButton && profileMenu) {
+            log('Menu elements found');
+            
+            // Add click handler
+            profileButton.onclick = function(e) {
+                log('Profile button clicked');
+                e.stopPropagation();
+                
+                if (profileMenu.classList.contains('show')) {
+                    log('Hiding menu');
+                    profileMenu.classList.remove('show');
+                } else {
+                    log('Showing menu');
+                    profileMenu.classList.add('show');
+                }
+            };
+            
+            // Close when clicking elsewhere
+            document.addEventListener('click', function(e) {
+                if (profileMenu.classList.contains('show') && 
+                    !profileMenu.contains(e.target) && 
+                    !profileButton.contains(e.target)) {
+                    
+                    log('Clicked outside, closing menu');
+                    profileMenu.classList.remove('show');
+                }
+            });
+        } else {
+            log('ERROR: Menu elements not found!');
+        }
+        
+        function testMenuToggle() {
+            log('Testing menu toggle function');
+            if (profileMenu.classList.contains('show')) {
+                profileMenu.classList.remove('show');
+                log('Menu hidden via test function');
+            } else {
+                profileMenu.classList.add('show');
+                log('Menu shown via test function');
+            }
+        }
+    </script>
+</body>
+</html> 

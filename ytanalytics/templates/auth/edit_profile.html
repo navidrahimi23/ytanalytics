@@ -1,0 +1,117 @@
+{% extends 'auth/base_auth.html' %}
+
+{% block auth_content %}
+<style>
+    .profile-container {
+        max-width: 600px;
+        margin: 40px auto;
+        padding: 20px;
+        background-color: rgba(60, 60, 60, 0.9);
+        border-radius: 15px;
+        color: #F5F5DC;
+    }
+
+    .profile-form {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .form-group label {
+        font-weight: bold;
+        color: #F5F5DC;
+    }
+
+    .form-group input,
+    .form-group textarea {
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid rgba(245, 245, 220, 0.3);
+        background-color: rgba(30, 30, 30, 0.9);
+        color: #F5F5DC;
+        font-family: 'SF Pro Display', sans-serif;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus {
+        outline: none;
+        border-color: #4A3B6E;
+    }
+
+    .submit-button {
+        padding: 12px 24px;
+        background-color: #4A3B6E;
+        color: #F5F5DC;
+        border: none;
+        border-radius: 8px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-top: 20px;
+    }
+
+    .submit-button:hover {
+        background-color: #5A4B7E;
+        transform: translateY(-2px);
+    }
+
+    .messages {
+        list-style: none;
+        padding: 0;
+        margin-bottom: 20px;
+    }
+
+    .messages li {
+        padding: 10px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+    }
+
+    .messages .success {
+        background-color: rgba(40, 167, 69, 0.2);
+        border: 1px solid #28a745;
+    }
+
+    .messages .error {
+        background-color: rgba(220, 53, 69, 0.2);
+        border: 1px solid #dc3545;
+    }
+</style>
+
+<div class="profile-container">
+    <h2>Edit Profile</h2>
+    
+    {% if messages %}
+    <ul class="messages">
+        {% for message in messages %}
+        <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data" class="profile-form">
+        {% csrf_token %}
+        {% for field in form %}
+        <div class="form-group">
+            {{ field.label_tag }}
+            {{ field }}
+            {% if field.help_text %}
+            <small>{{ field.help_text }}</small>
+            {% endif %}
+            {% if field.errors %}
+            <div class="error">
+                {{ field.errors }}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+        <button type="submit" class="submit-button">Save Changes</button>
+    </form>
+</div>
+{% endblock %} 

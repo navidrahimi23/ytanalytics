@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center bg-[#1a1a1a] px-4">
+    <div class="max-w-md w-full">
+        <div class="bg-[rgba(30,30,30,0.6)] backdrop-blur-md rounded-xl p-8 border border-[rgba(245,245,220,0.1)]">
+            <h2 class="text-2xl font-bold text-white mb-6 text-center">Sign In</h2>
+            
+            <!-- Social Login -->
+            <div class="mb-6">
+                <a href="{% url 'social:begin' 'google-oauth2' %}" 
+                   class="w-full flex items-center justify-center gap-2 bg-white hover:bg-gray-100 text-gray-900 px-4 py-2.5 rounded-lg transition-colors">
+                    <i class="fab fa-google"></i>
+                    <span>Continue with Google</span>
+                </a>
+            </div>
+            
+            <div class="relative mb-6">
+                <div class="absolute inset-0 flex items-center">
+                    <div class="w-full border-t border-[rgba(245,245,220,0.1)]"></div>
+                </div>
+                <div class="relative flex justify-center text-sm">
+                    <span class="px-2 text-gray-400 bg-[#1a1a1a]">or</span>
+                </div>
+            </div>
+            
+            <!-- Regular Login Form -->
+            <form method="post" class="space-y-4">
+                {% csrf_token %}
+                
+                {% if form.errors %}
+                <div class="bg-red-500 bg-opacity-10 border border-red-500 text-red-400 px-4 py-2 rounded-lg mb-4">
+                    {% for field in form %}
+                        {% for error in field.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    {% endfor %}
+                    {% for error in form.non_field_errors %}
+                        <p>{{ error }}</p>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                <div>
+                    <input type="text" name="username" id="id_username" 
+                           class="w-full bg-[rgba(18,18,18,0.8)] text-white px-4 py-2 rounded-lg border border-[rgba(245,245,220,0.1)] focus:outline-none focus:border-purple-500"
+                           placeholder="Username" required>
+                </div>
+                
+                <div>
+                    <input type="password" name="password" id="id_password" 
+                           class="w-full bg-[rgba(18,18,18,0.8)] text-white px-4 py-2 rounded-lg border border-[rgba(245,245,220,0.1)] focus:outline-none focus:border-purple-500"
+                           placeholder="Password" required>
+                </div>
+                
+                <button type="submit" 
+                        class="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors">
+                    Sign In
+                </button>
+            </form>
+            
+            <div class="mt-6 text-center">
+                <p class="text-gray-400">
+                    Don't have an account? 
+                    <a href="{% url 'signup' %}" class="text-purple-400 hover:text-purple-300">Sign up</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

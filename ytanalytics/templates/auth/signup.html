@@ -1,0 +1,175 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="signup-container">
+    <h1 class="signup-title">Create Your Account</h1>
+    
+    {% if messages %}
+    <ul class="messages">
+        {% for message in messages %}
+        <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+    
+    <div class="signup-form-container">
+        <form method="post" class="signup-form">
+            {% csrf_token %}
+            
+            {% for field in form %}
+            <div class="form-group">
+                {{ field.label_tag }}
+                {{ field }}
+                {% if field.help_text %}
+                <small class="help-text">{{ field.help_text }}</small>
+                {% endif %}
+                {% if field.errors %}
+                <div class="error">
+                    {{ field.errors }}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+            
+            <button type="submit" class="submit-button">Create Account</button>
+        </form>
+        
+        <div class="login-options">
+            <p>Already have an account? <a href="{% url 'home' %}">Sign In</a></p>
+        </div>
+    </div>
+</div>
+
+<style>
+    .signup-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 80vh;
+        padding: 20px;
+    }
+
+    .signup-title {
+        font-size: 2.5rem;
+        color: #F5F5DC;
+        margin-bottom: 30px;
+        font-weight: bold;
+        text-align: center;
+    }
+
+    .signup-form-container {
+        background-color: rgba(30, 30, 30, 0.9);
+        padding: 40px;
+        border-radius: 15px;
+        width: 90%;
+        max-width: 600px;
+        backdrop-filter: blur(10px);
+    }
+
+    .signup-form {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .form-group label {
+        font-weight: bold;
+        color: #F5F5DC;
+    }
+
+    .form-group input {
+        padding: 12px;
+        border-radius: 8px;
+        border: 1px solid rgba(245, 245, 220, 0.3);
+        background-color: rgba(30, 30, 30, 0.9);
+        color: #F5F5DC;
+        font-family: 'SF Pro Display', sans-serif;
+    }
+
+    .form-group input:focus {
+        outline: none;
+        border-color: #4A3B6E;
+    }
+
+    .help-text {
+        font-size: 0.85rem;
+        color: rgba(245, 245, 220, 0.6);
+    }
+
+    .error {
+        color: #ff6b6b;
+        font-size: 0.9rem;
+        margin-top: 5px;
+    }
+
+    .submit-button {
+        padding: 14px 24px;
+        background: linear-gradient(45deg, #4A3B6E, #6a5aad);
+        color: #F5F5DC;
+        border: none;
+        border-radius: 8px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-top: 10px;
+        font-size: 1rem;
+    }
+
+    .submit-button:hover {
+        background: linear-gradient(45deg, #5a4b7e, #7a6abd);
+        transform: translateY(-2px);
+    }
+
+    .login-options {
+        margin-top: 30px;
+        text-align: center;
+        color: #F5F5DC;
+    }
+
+    .login-options a {
+        color: #6a5aad;
+        text-decoration: none;
+        font-weight: bold;
+        transition: color 0.3s ease;
+    }
+
+    .login-options a:hover {
+        color: #7a6abd;
+        text-decoration: underline;
+    }
+
+    .messages {
+        list-style: none;
+        padding: 0;
+        margin-bottom: 20px;
+        width: 90%;
+        max-width: 600px;
+    }
+
+    .messages li {
+        padding: 12px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        text-align: center;
+    }
+
+    .messages .success {
+        background-color: rgba(40, 167, 69, 0.2);
+        border: 1px solid #28a745;
+        color: #F5F5DC;
+    }
+
+    .messages .error {
+        background-color: rgba(220, 53, 69, 0.2);
+        border: 1px solid #dc3545;
+        color: #F5F5DC;
+    }
+</style>
+{% endblock %} 

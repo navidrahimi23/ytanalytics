@@ -1,12 +1,237 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container">
-    <div class="title-box">
-        <h2 style="margin: 0; font-weight: bold;">Ready to enter Liminal?</h2>
+<div class="login-container">
+    <h1 class="login-title">Sign In to Your Account</h1>
+    
+    {% if messages %}
+    <ul class="messages">
+        {% for message in messages %}
+        <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+    
+    {% if form.errors %}
+    <div class="login-error">
+        Your username and password didn't match. Please try again.
     </div>
-    <div class="login-box">
-        <a href="{% url 'social:begin' 'google-oauth2' %}">Sign In</a>
+    {% endif %}
+    
+    <div class="login-form-container">
+        <form method="post" class="login-form">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label for="id_username">Username:</label>
+                <input type="text" name="username" id="id_username" required autofocus>
+            </div>
+            
+            <div class="form-group">
+                <label for="id_password">Password:</label>
+                <input type="password" name="password" id="id_password" required>
+            </div>
+            
+            <button type="submit" class="submit-button">Sign In</button>
+            
+            {% if next %}
+                <input type="hidden" name="next" value="{{ next }}">
+            {% endif %}
+        </form>
+        
+        <div class="login-divider">
+            <span>or</span>
+        </div>
+        
+        <div class="oauth-options">
+            <a href="{% url 'social:begin' 'google-oauth2' %}" class="google-signin-btn">
+                <i class="fab fa-google"></i> Sign In with Google
+            </a>
+        </div>
+        
+        <div class="signup-link">
+            <p>Don't have an account? <a href="{% url 'signup' %}">Create one</a></p>
+        </div>
     </div>
 </div>
+
+<style>
+    .login-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 80vh;
+        padding: 20px;
+    }
+
+    .login-title {
+        font-size: 2.5rem;
+        color: #F5F5DC;
+        margin-bottom: 30px;
+        font-weight: bold;
+        text-align: center;
+    }
+
+    .login-form-container {
+        background-color: rgba(30, 30, 30, 0.9);
+        padding: 40px;
+        border-radius: 15px;
+        width: 90%;
+        max-width: 500px;
+        backdrop-filter: blur(10px);
+    }
+
+    .login-form {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .form-group label {
+        font-weight: bold;
+        color: #F5F5DC;
+    }
+
+    .form-group input {
+        padding: 12px;
+        border-radius: 8px;
+        border: 1px solid rgba(245, 245, 220, 0.3);
+        background-color: rgba(30, 30, 30, 0.9);
+        color: #F5F5DC;
+        font-family: 'SF Pro Display', sans-serif;
+    }
+
+    .form-group input:focus {
+        outline: none;
+        border-color: #4A3B6E;
+    }
+
+    .submit-button {
+        padding: 14px 24px;
+        background: linear-gradient(45deg, #4A3B6E, #6a5aad);
+        color: #F5F5DC;
+        border: none;
+        border-radius: 8px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-top: 10px;
+        font-size: 1rem;
+    }
+
+    .submit-button:hover {
+        background: linear-gradient(45deg, #5a4b7e, #7a6abd);
+        transform: translateY(-2px);
+    }
+
+    .login-divider {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        margin: 25px 0;
+    }
+
+    .login-divider::before,
+    .login-divider::after {
+        content: "";
+        flex: 1;
+        border-bottom: 1px solid rgba(245, 245, 220, 0.3);
+    }
+
+    .login-divider span {
+        padding: 0 10px;
+        color: rgba(245, 245, 220, 0.7);
+        font-size: 0.9rem;
+    }
+
+    .oauth-options {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .google-signin-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 12px 20px;
+        background-color: #4285F4;
+        color: white;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: bold;
+        transition: all 0.3s ease;
+    }
+
+    .google-signin-btn:hover {
+        background-color: #357ae8;
+        transform: translateY(-2px);
+    }
+
+    .google-signin-btn i {
+        margin-right: 10px;
+    }
+
+    .signup-link {
+        margin-top: 25px;
+        text-align: center;
+        color: rgba(245, 245, 220, 0.8);
+    }
+
+    .signup-link a {
+        color: #6a5aad;
+        text-decoration: none;
+        font-weight: bold;
+    }
+
+    .signup-link a:hover {
+        text-decoration: underline;
+    }
+
+    .login-error {
+        background-color: rgba(220, 53, 69, 0.2);
+        border: 1px solid #dc3545;
+        color: #F5F5DC;
+        padding: 12px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        text-align: center;
+        width: 90%;
+        max-width: 500px;
+    }
+
+    .messages {
+        list-style: none;
+        padding: 0;
+        margin-bottom: 20px;
+        width: 90%;
+        max-width: 500px;
+    }
+
+    .messages li {
+        padding: 12px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        text-align: center;
+    }
+
+    .messages .success {
+        background-color: rgba(40, 167, 69, 0.2);
+        border: 1px solid #28a745;
+        color: #F5F5DC;
+    }
+
+    .messages .error {
+        background-color: rgba(220, 53, 69, 0.2);
+        border: 1px solid #dc3545;
+        color: #F5F5DC;
+    }
+</style>
 {% endblock %} 

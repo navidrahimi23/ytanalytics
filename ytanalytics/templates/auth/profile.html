@@ -1,0 +1,126 @@
+{% extends 'auth/base_auth.html' %}
+
+{% block auth_content %}
+<div class="max-w-2xl mx-auto py-8 px-4">
+    <div class="bg-[rgba(30,30,30,0.95)] rounded-xl overflow-hidden shadow-xl">
+        <div class="p-6 border-b border-[rgba(245,245,220,0.1)]">
+            <h2 class="text-xl font-semibold text-[#F5F5DC]">Edit Profile</h2>
+        </div>
+        <div class="p-6">
+            {% if messages %}
+            <div class="mb-6">
+                {% for message in messages %}
+                <div class="p-4 mb-4 rounded-lg {% if message.tags == 'success' %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <form method="post" enctype="multipart/form-data" class="space-y-6">
+                {% csrf_token %}
+                
+                <!-- Account Information -->
+                <div class="space-y-4">
+                    <h3 class="text-lg font-semibold text-[#F5F5DC]">Account Information</h3>
+                    
+                    <!-- Username -->
+                    <div class="space-y-2">
+                        <label for="id_username" class="block text-sm font-medium text-gray-300">Username</label>
+                        {{ user_form.username }}
+                        {% if user_form.username.errors %}
+                        <p class="text-red-400 text-sm">{{ user_form.username.errors.0 }}</p>
+                        {% endif %}
+                        {% if user_form.username.help_text %}
+                        <p class="text-xs text-gray-400">{{ user_form.username.help_text }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Profile Information -->
+                <div class="space-y-4">
+                    <h3 class="text-lg font-semibold text-[#F5F5DC]">Profile Information</h3>
+                    
+                    <!-- Bio -->
+                    <div class="space-y-2">
+                        <label for="id_bio" class="block text-sm font-medium text-gray-300">Bio</label>
+                        {{ profile_form.bio }}
+                        {% if profile_form.bio.errors %}
+                        <p class="text-red-400 text-sm">{{ profile_form.bio.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Location -->
+                    <div class="space-y-2">
+                        <label for="id_location" class="block text-sm font-medium text-gray-300">Location</label>
+                        {{ profile_form.location }}
+                        {% if profile_form.location.errors %}
+                        <p class="text-red-400 text-sm">{{ profile_form.location.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Birth Date -->
+                    <div class="space-y-2">
+                        <label for="id_birth_date" class="block text-sm font-medium text-gray-300">Birth Date</label>
+                        {{ profile_form.birth_date }}
+                        {% if profile_form.birth_date.errors %}
+                        <p class="text-red-400 text-sm">{{ profile_form.birth_date.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Profile Picture -->
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-gray-300">Profile Picture</label>
+                        <div class="flex items-center space-x-4">
+                            {% if user.userprofile.profile_picture %}
+                            <img src="{{ user.userprofile.profile_picture.url }}" alt="Current profile picture" 
+                                 class="w-16 h-16 rounded-full object-cover border-2 border-purple-500">
+                            {% endif %}
+                            <div class="flex-1">
+                                {{ profile_form.profile_picture }}
+                                {% if profile_form.profile_picture.errors %}
+                                <p class="text-red-400 text-sm">{{ profile_form.profile_picture.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- YouTube Channel -->
+                    <div class="space-y-2">
+                        <label for="id_youtube_channel" class="block text-sm font-medium text-gray-300">YouTube Channel</label>
+                        {{ profile_form.youtube_channel }}
+                        {% if profile_form.youtube_channel.errors %}
+                        <p class="text-red-400 text-sm">{{ profile_form.youtube_channel.errors.0 }}</p>
+                        {% endif %}
+                        <p class="text-xs text-gray-400">Enter your YouTube channel URL or channel ID. Leave empty if you don't have a channel.</p>
+                    </div>
+                </div>
+                
+                <!-- Submit Button -->
+                <div class="pt-4">
+                    <button type="submit" class="w-full px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors">
+                        Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Form styling */
+    input[type="text"],
+    input[type="date"],
+    textarea {
+        @apply w-full px-3 py-2 bg-[rgba(30,30,30,0.6)] border border-[rgba(245,245,220,0.1)] rounded-lg text-[#F5F5DC] focus:outline-none focus:border-purple-500;
+    }
+    
+    input[type="file"] {
+        @apply hidden;
+    }
+    
+    label[for="id_profile_picture"] {
+        @apply flex items-center justify-center px-4 py-2 bg-purple-500/10 text-purple-400 rounded-lg hover:bg-purple-500/20 transition-colors cursor-pointer;
+    }
+</style>
+{% endblock %} 

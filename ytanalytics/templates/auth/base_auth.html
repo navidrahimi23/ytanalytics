@@ -1,0 +1,279 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="dashboard-container bg-[#1a1a1a] min-h-screen w-full relative overflow-x-hidden pb-12 z-0 flex flex-col">
+    <!-- Navigation Menu -->
+    <nav class="fixed top-5 left-5 z-50 flex gap-2 bg-[rgba(30,30,30,0.6)] backdrop-blur-md p-3 rounded-3xl border border-[rgba(245,245,220,0.1)] items-center">
+        <a href="{% url 'home' %}" class="logo-container flex items-center gap-2 mr-4 border-r border-[rgba(245,245,220,0.1)] pr-4 transition-transform duration-300 hover:scale-110">
+            <img src="{% static 'images/grid-circle.png' %}" alt="Logo" class="w-8 h-8 rounded-full">
+            <span class="text-[#d8c5f2] font-bold text-lg">Liminal.</span>
+        </a>
+        <a href="{% url 'dashboard' %}" class="nav-item {% if request.resolver_match.url_name == 'dashboard' %}bg-yt-purple{% else %}bg-[rgba(30,30,30,0.5)]{% endif %} px-4 py-2 rounded-2xl text-[#F5F5DC] hover:bg-yt-purple transition-colors flex items-center gap-2">
+            <i class="fas fa-desktop"></i> Dashboard
+        </a>
+        <a href="{% url 'statistics' %}" class="nav-item {% if request.resolver_match.url_name == 'statistics' %}bg-yt-purple{% else %}bg-[rgba(30,30,30,0.5)]{% endif %} px-4 py-2 rounded-2xl text-[#F5F5DC] hover:bg-yt-purple transition-colors flex items-center gap-2">
+            <i class="fas fa-chart-bar"></i> Statistics
+        </a>
+        <a href="{% url 'network' %}" class="nav-item {% if request.resolver_match.url_name == 'network' %}bg-yt-purple{% else %}bg-[rgba(30,30,30,0.5)]{% endif %} px-4 py-2 rounded-2xl text-[#F5F5DC] hover:bg-yt-purple transition-colors flex items-center gap-2">
+            <i class="fas fa-users"></i> Network
+        </a>
+        <a href="{% url 'youtube_search' %}" class="nav-item {% if request.resolver_match.url_name == 'youtube_search' %}bg-yt-purple{% else %}bg-[rgba(30,30,30,0.5)]{% endif %} px-4 py-2 rounded-2xl text-[#F5F5DC] hover:bg-yt-purple transition-colors flex items-center gap-2">
+            <i class="fab fa-youtube"></i> Search
+        </a>
+    </nav>
+
+    <!-- User Menu -->
+    <div class="top-right-container fixed top-5 right-5 flex items-center z-50">
+        <div id="profile-dropdown-button" class="user-menu-container relative p-1 cursor-pointer z-50 flex justify-center items-center">
+            {% if user.userprofile.profile_picture %}
+            <img src="{{ user.userprofile.profile_picture.url }}" alt="Profile" class="w-12 h-12 rounded-full object-cover cursor-pointer transition-transform hover:scale-110 border-2 border-opacity-70 border-[#F5F5DC] shadow-lg">
+            {% else %}
+            <div class="w-12 h-12 rounded-full flex items-center justify-center bg-gradient-to-br from-yt-purple to-purple-600 text-[#F5F5DC] font-bold text-lg">
+                {{ user.username|make_list|first|upper }}
+            </div>
+            {% endif %}
+            
+            <!-- User Dropdown Menu -->
+            <div id="profile-dropdown" class="dropdown-menu hidden opacity-0 absolute top-full right-0 mt-2 min-w-[220px] bg-[rgba(30,30,30,0.95)] rounded-xl overflow-hidden shadow-xl transition-all">
+                <div class="p-4 border-b border-[rgba(245,245,220,0.1)] text-center">
+                    <h3 class="text-[#F5F5DC] font-semibold">{{ user.get_full_name|default:user.username }}</h3>
+                    <p class="text-sm text-gray-400">@{{ user.username }}</p>
+                </div>
+                <div class="py-2">
+                    <a href="{% url 'view_profile' user.username %}" class="flex items-center px-4 py-2 text-[#F5F5DC] hover:bg-[rgba(74,59,110,0.5)] transition-colors">
+                        <i class="fas fa-user w-5 opacity-80"></i>
+                        <span>View Profile</span>
+                    </a>
+                    <button onclick="openProfileModal()" class="w-full flex items-center px-4 py-2 text-[#F5F5DC] hover:bg-[rgba(74,59,110,0.5)] transition-colors">
+                        <i class="fas fa-edit w-5 opacity-80"></i>
+                        <span>Edit Profile</span>
+                    </button>
+                    <button onclick="openConnectModal()" class="w-full flex items-center px-4 py-2 text-[#F5F5DC] hover:bg-[rgba(74,59,110,0.5)] transition-colors">
+                        <i class="fas fa-link w-5 opacity-80"></i>
+                        <span>Connect Accounts</span>
+                    </button>
+                    <a href="{% url 'logout' %}" class="flex items-center px-4 py-2 text-red-400 hover:bg-[rgba(74,59,110,0.5)] transition-colors border-t border-[rgba(245,245,220,0.1)]">
+                        <i class="fas fa-sign-out-alt w-5 opacity-80"></i>
+                        <span>Logout</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Edit Modal -->
+    <div id="profileModal" class="fixed inset-0 bg-black bg-opacity-50 z-[100] hidden items-center justify-center modal-backdrop">
+        <div class="bg-[#1e1e1e] rounded-xl max-w-lg w-full mx-4 overflow-hidden modal">
+            <div class="p-6 border-b border-[rgba(245,245,220,0.1)]">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-semibold text-[#F5F5DC]">Edit Profile</h2>
+                    <button onclick="closeProfileModal()" class="text-gray-400 hover:text-gray-200">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="profileModalContent" class="p-6">
+                <!-- Content will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Connect Accounts Modal -->
+    <div id="connectModal" class="fixed inset-0 bg-black bg-opacity-50 z-[100] hidden items-center justify-center modal-backdrop">
+        <div class="bg-[#1e1e1e] rounded-xl max-w-lg w-full mx-4 overflow-hidden modal">
+            <div class="p-6 border-b border-[rgba(245,245,220,0.1)]">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-semibold text-[#F5F5DC]">Connect Accounts</h2>
+                    <button onclick="closeConnectModal()" class="text-gray-400 hover:text-gray-200">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-6 space-y-6">
+                <!-- YouTube -->
+                <div class="flex items-center justify-between p-4 bg-[rgba(30,30,30,0.6)] rounded-xl border border-[rgba(245,245,220,0.1)]">
+                    <div class="flex items-center gap-4">
+                        <i class="fab fa-youtube text-2xl text-red-500"></i>
+                        <div>
+                            <h3 class="text-[#F5F5DC] font-semibold">YouTube</h3>
+                            <p class="text-sm text-gray-400">Connect your YouTube channel</p>
+                        </div>
+                    </div>
+                    {% if user.userprofile.youtube_connected %}
+                    <button onclick="disconnectPlatform('youtube')" class="px-4 py-2 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500/20 transition-colors">
+                        Disconnect
+                    </button>
+                    {% else %}
+                    <a href="{% url 'connect_youtube' %}" class="px-4 py-2 bg-purple-500/10 text-purple-400 rounded-lg hover:bg-purple-500/20 transition-colors">
+                        Connect
+                    </a>
+                    {% endif %}
+                </div>
+
+                <!-- TikTok -->
+                <div class="flex items-center justify-between p-4 bg-[rgba(30,30,30,0.6)] rounded-xl border border-[rgba(245,245,220,0.1)]">
+                    <div class="flex items-center gap-4">
+                        <i class="fab fa-tiktok text-2xl text-[#F5F5DC]"></i>
+                        <div>
+                            <h3 class="text-[#F5F5DC] font-semibold">TikTok</h3>
+                            <p class="text-sm text-gray-400">Connect your TikTok account</p>
+                        </div>
+                    </div>
+                    <button disabled class="px-4 py-2 bg-gray-500/10 text-gray-400 rounded-lg cursor-not-allowed">
+                        Coming Soon
+                    </button>
+                </div>
+
+                <!-- Instagram -->
+                <div class="flex items-center justify-between p-4 bg-[rgba(30,30,30,0.6)] rounded-xl border border-[rgba(245,245,220,0.1)]">
+                    <div class="flex items-center gap-4">
+                        <i class="fab fa-instagram text-2xl text-pink-500"></i>
+                        <div>
+                            <h3 class="text-[#F5F5DC] font-semibold">Instagram</h3>
+                            <p class="text-sm text-gray-400">Connect your Instagram account</p>
+                        </div>
+                    </div>
+                    <button disabled class="px-4 py-2 bg-gray-500/10 text-gray-400 rounded-lg cursor-not-allowed">
+                        Coming Soon
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content-wrapper flex-1 w-full max-w-7xl mx-auto px-4 py-20 relative z-10">
+        {% block auth_content %}{% endblock %}
+    </div>
+
+    <!-- Footer -->
+    <footer class="mt-auto bg-[rgba(18,18,18,0.8)] backdrop-blur-md border-t border-[rgba(255,255,255,0.1)] py-4 px-6 text-center">
+        <div class="max-w-7xl mx-auto">
+            <div class="mb-2">
+                <a href="{% url 'terms' %}" class="text-gray-400 hover:text-gray-200 mx-2 transition-colors">Terms of Service</a>
+                <span class="text-gray-600">|</span>
+                <a href="{% url 'privacy' %}" class="text-gray-400 hover:text-gray-200 mx-2 transition-colors">Privacy Policy</a>
+            </div>
+            <p class="text-gray-500 text-sm">&copy; {% now "Y" %} navid.click. All rights reserved.</p>
+        </div>
+    </footer>
+</div>
+
+{% block extra_js %}
+<script>
+    // Global event listener for profile dropdown across all pages
+    document.addEventListener('DOMContentLoaded', function() {
+        const profileButton = document.getElementById('profile-dropdown-button');
+        const profileDropdown = document.getElementById('profile-dropdown');
+        
+        if (profileButton && profileDropdown) {
+            profileButton.addEventListener('click', function() {
+                profileDropdown.classList.toggle('hidden');
+                profileDropdown.classList.toggle('opacity-0');
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(event) {
+                if (!profileButton.contains(event.target) && !profileDropdown.contains(event.target)) {
+                    profileDropdown.classList.add('hidden');
+                    profileDropdown.classList.add('opacity-0');
+                }
+            });
+        }
+        
+        // Close modals when backdrop is clicked
+        const modalBackdrops = document.querySelectorAll('.modal-backdrop');
+        modalBackdrops.forEach(backdrop => {
+            backdrop.addEventListener('click', function(e) {
+                if (e.target === backdrop) {
+                    closeAllModals();
+                }
+            });
+        });
+    });
+
+    function closeAllModals() {
+        const modals = document.querySelectorAll('.modal');
+        modals.forEach(modal => {
+            modal.classList.add('hidden');
+        });
+        document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+            backdrop.classList.add('hidden');
+        });
+    }
+
+    function openProfileModal() {
+        const modal = document.getElementById('profileModal');
+        const content = document.getElementById('profileModalContent');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        
+        // Show loading state
+        content.innerHTML = '<div class="flex justify-center"><i class="fas fa-spinner fa-spin text-2xl text-purple-400"></i></div>';
+        
+        // Load profile edit form
+        fetch('/edit-profile/?ajax=1')
+            .then(response => response.json())
+            .then(data => {
+                content.innerHTML = data.html;
+            })
+            .catch(error => {
+                content.innerHTML = '<p class="text-red-400">Error loading profile form. Please try again.</p>';
+                console.error('Error loading profile form:', error);
+            });
+    }
+
+    function closeProfileModal() {
+        document.getElementById('profileModal').classList.add('hidden');
+        document.getElementById('profileModal').classList.remove('flex');
+    }
+
+    function openConnectModal() {
+        document.getElementById('connectModal').classList.remove('hidden');
+        document.getElementById('connectModal').classList.add('flex');
+    }
+
+    function closeConnectModal() {
+        document.getElementById('connectModal').classList.add('hidden');
+        document.getElementById('connectModal').classList.remove('flex');
+    }
+
+    function disconnectPlatform(platform) {
+        if (confirm(`Are you sure you want to disconnect your ${platform} account?`)) {
+            // Send AJAX request to disconnect
+            fetch(`/disconnect-${platform}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    alert('Error disconnecting account: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while disconnecting your account.');
+            });
+        }
+    }
+</script>
+{% endblock %}
+
+<style>
+/* Add logo hover animation */
+.logo-container {
+    transition: transform 0.3s ease;
+}
+.logo-container:hover {
+    transform: scale(1.1);
+}
+</style>
+
+{% endblock %} 

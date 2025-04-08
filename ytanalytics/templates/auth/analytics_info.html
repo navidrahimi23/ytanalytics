@@ -1,0 +1,191 @@
+{% extends 'auth/base_auth.html' %}
+{% load static %}
+
+{% block title %}YouTube Analytics Access{% endblock %}
+
+{% block auth_content %}
+<div class="analytics-info-container">
+    <div class="analytics-info-card">
+        <h1>Unlock Advanced Analytics</h1>
+        
+        <div class="info-section">
+            <div class="info-icon">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="info-content">
+                <h2>Why We Need Analytics Access</h2>
+                <p>To provide you with advanced insights about your channel performance, we need permission to access your YouTube Analytics data. This allows us to show you detailed audience retention graphs, demographic information, and deeper performance metrics.</p>
+            </div>
+        </div>
+        
+        <div class="info-section">
+            <div class="info-icon">
+                <i class="fas fa-lock-open"></i>
+            </div>
+            <div class="info-content">
+                <h2>What This Access Allows</h2>
+                <ul>
+                    <li>View detailed audience retention graphs</li>
+                    <li>Access demographic data of your viewers</li>
+                    <li>See detailed engagement metrics</li>
+                    <li>Compare video performance across your library</li>
+                    <li>Get insights on best posting times</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="info-section">
+            <div class="info-icon">
+                <i class="fas fa-shield-alt"></i>
+            </div>
+            <div class="info-content">
+                <h2>What This Access Does Not Allow</h2>
+                <ul>
+                    <li>We cannot modify your YouTube channel</li>
+                    <li>We cannot post videos or comments on your behalf</li>
+                    <li>We cannot access your personal Google account information</li>
+                    <li>We do not store your raw analytics data</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="info-section">
+            <div class="info-icon">
+                <i class="fas fa-user-shield"></i>
+            </div>
+            <div class="info-content">
+                <h2>Your Data Security</h2>
+                <p>We take your privacy seriously. All data is encrypted and we only process the information needed to display your analytics. You can revoke this permission at any time through your Google account settings.</p>
+            </div>
+        </div>
+        
+        <div class="actions">
+            <a href="{% url 'request_analytics_access' %}" class="btn primary-btn">Grant Analytics Access</a>
+            <a href="{% url 'dashboard' %}" class="btn secondary-btn">Maybe Later</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .analytics-info-container {
+        max-width: 800px;
+        margin: 40px auto;
+        padding: 0 20px;
+    }
+    
+    .analytics-info-card {
+        background-color: white;
+        border-radius: 12px;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+        padding: 40px;
+    }
+    
+    .analytics-info-card h1 {
+        text-align: center;
+        margin-bottom: 40px;
+        color: #2c3e50;
+        font-size: 32px;
+    }
+    
+    .info-section {
+        display: flex;
+        margin-bottom: 30px;
+        align-items: flex-start;
+    }
+    
+    .info-icon {
+        flex: 0 0 60px;
+        font-size: 24px;
+        color: #3498db;
+        text-align: center;
+        padding-top: 5px;
+    }
+    
+    .info-content {
+        flex: 1;
+    }
+    
+    .info-content h2 {
+        margin-top: 0;
+        margin-bottom: 15px;
+        color: #34495e;
+        font-size: 22px;
+    }
+    
+    .info-content p {
+        color: #7f8c8d;
+        line-height: 1.6;
+    }
+    
+    .info-content ul {
+        color: #7f8c8d;
+        padding-left: 20px;
+    }
+    
+    .info-content ul li {
+        margin-bottom: 8px;
+        line-height: 1.4;
+    }
+    
+    .actions {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        margin-top: 40px;
+    }
+    
+    .primary-btn {
+        background-color: #3498db;
+        color: white;
+        padding: 12px 24px;
+        border-radius: 6px;
+        text-decoration: none;
+        font-weight: bold;
+        transition: background-color 0.3s;
+    }
+    
+    .primary-btn:hover {
+        background-color: #2980b9;
+    }
+    
+    .secondary-btn {
+        background-color: #ecf0f1;
+        color: #7f8c8d;
+        padding: 12px 24px;
+        border-radius: 6px;
+        text-decoration: none;
+        font-weight: bold;
+        transition: background-color 0.3s;
+    }
+    
+    .secondary-btn:hover {
+        background-color: #bdc3c7;
+    }
+    
+    @media (max-width: 600px) {
+        .analytics-info-card {
+            padding: 25px;
+        }
+        
+        .info-section {
+            flex-direction: column;
+        }
+        
+        .info-icon {
+            margin-bottom: 15px;
+        }
+        
+        .actions {
+            flex-direction: column;
+        }
+        
+        .primary-btn, .secondary-btn {
+            width: 100%;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+    }
+</style>
+{% endblock %} 

@@ -1,0 +1,755 @@
+{% extends 'auth/base_auth.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}{{ channel.title }} - YouTube Analytics{% endblock %}
+
+{% block auth_content %}
+<div class="content-section youtube-channel-details">
+    {% if error %}
+        <div class="error-message">
+            <h3>Error</h3>
+            <p>{{ error_message }}</p>
+            <a href="{% url 'youtube_search' %}" class="back-button">
+                <i class="fas fa-arrow-left"></i> Back to Search
+            </a>
+        </div>
+    {% else %}
+        {% if channel %}
+            <div class="channel-header">
+                <div class="channel-banner-container">
+                    <div class="channel-banner">
+                        {% if channel.banner_url %}
+                            <img src="{{ channel.banner_url }}" alt="{{ channel.title }} banner" class="banner-image">
+                        {% endif %}
+                        <div class="channel-profile">
+                            <div class="channel-thumbnail">
+                                <img src="{{ channel.thumbnail }}" alt="{{ channel.title }}">
+                            </div>
+                            <div class="channel-title-section">
+                                <h2>{{ channel.title }}</h2>
+                                {% if channel.custom_url %}
+                                    <p class="channel-custom-url">
+                                        <a href="https://www.youtube.com/{{ channel.custom_url }}" target="_blank">
+                                            {{ channel.custom_url }}
+                                        </a>
+                                    </p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="channel-stats">
+                    <div class="stat-item">
+                        <div class="stat-value">{{ channel.subscriber_count|intcomma }}</div>
+                        <div class="stat-label">Subscribers</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">{{ channel.video_count|intcomma }}</div>
+                        <div class="stat-label">Videos</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">{{ channel.view_count|intcomma }}</div>
+                        <div class="stat-label">Total Views</div>
+                    </div>
+                </div>
+                
+                <!-- Historical Stats Section -->
+                <div class="historical-stats-section">
+                    <h3>Channel Growth</h3>
+                    <div class="historical-controls">
+                        <div class="metric-toggle">
+                            <button class="metric-btn active" data-metric="subscribers">Subscribers</button>
+                            <button class="metric-btn" data-metric="views">Views</button>
+                        </div>
+                        <div class="time-range-selector">
+                            <select id="time-range">
+                                <option value="1day">1 Day</option>
+                                <option value="10days">10 Days</option>
+                                <option value="1month" selected>1 Month</option>
+                                <option value="6months">6 Months</option>
+                                <option value="1year">1 Year</option>
+                                <option value="all">All Time</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="charts-container">
+                        <div class="chart-wrapper">
+                            <canvas id="historicalStatsChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div id="no-data-message" style="display: none;">
+                        <p><i class="fas fa-info-circle"></i> Not enough historical data available for the selected time range.</p>
+                        <p class="data-hint">Data collection starts from your first view of this channel. More data points will be added daily.</p>
+                    </div>
+                </div>
+                
+                <div class="channel-description-section">
+                    <h3>About</h3>
+                    <div class="channel-description">
+                        <p>{{ channel.description|linebreaksbr }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            {% if videos %}
+                <div class="videos-section">
+                    <h3>Recent Videos</h3>
+                    
+                    <!-- Chart Section -->
+                    <div class="charts-container">
+                        <div class="chart-wrapper">
+                            <canvas id="viewsChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- Videos Table -->
+                    <div class="videos-table-container">
+                        <table class="videos-table">
+                            <thead>
+                                <tr>
+                                    <th>Video</th>
+                                    <th>Date</th>
+                                    <th>Views</th>
+                                    <th>Likes</th>
+                                    <th>Comments</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for video in videos %}
+                                    <tr>
+                                        <td class="video-title-cell">
+                                            <div class="video-thumbnail">
+                                                <img src="{{ video.thumbnail }}" alt="{{ video.title }}">
+                                            </div>
+                                            <div class="video-title">
+                                                <a href="{{ video.url }}" target="_blank" title="{{ video.title }}">
+                                                    {{ video.title|truncatechars:50 }}
+                                                </a>
+                                            </div>
+                                        </td>
+                                        <td>{{ video.published_at|date:"M d, Y" }}</td>
+                                        <td>{{ video.view_count|intcomma }}</td>
+                                        <td>{{ video.like_count|intcomma }}</td>
+                                        <td>{{ video.comment_count|intcomma }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {% else %}
+                <div class="no-videos">
+                    <p>No recent videos found for this channel.</p>
+                </div>
+            {% endif %}
+        {% endif %}
+    {% endif %}
+</div>
+
+<style>
+    .youtube-channel-details {
+        margin-bottom: 40px;
+        padding-top: 80px; /* Added padding to ensure content starts below the navigation bar */
+    }
+    
+    .back-button {
+        display: inline-block;
+        background-color: rgba(30, 30, 30, 0.6);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        padding: 8px 15px;
+        border-radius: 6px;
+        text-decoration: none;
+        color: #F5F5DC;
+        margin-bottom: 20px;
+        transition: background-color 0.3s ease;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(245, 245, 220, 0.1);
+    }
+    
+    .back-button:hover {
+        background-color: rgba(74, 59, 110, 0.7);
+    }
+    
+    .channel-banner-container {
+        position: relative;
+        margin-bottom: 60px;
+        margin-top: 30px;
+        background-color: rgba(30, 30, 30, 0.6);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border-radius: 15px;
+        padding: 15px;
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(245, 245, 220, 0.1);
+    }
+    
+    .channel-banner {
+        position: relative;
+        margin-bottom: 120px;
+    }
+    
+    .banner-image {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+        border-radius: 12px;
+    }
+    
+    .channel-profile {
+        position: absolute;
+        bottom: -100px;
+        left: 30px;
+        display: flex;
+        align-items: center;
+        background-color: rgba(30, 30, 30, 0.8);
+        padding: 15px 20px;
+        border-radius: 12px;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        z-index: 10;
+        border: 1px solid rgba(245, 245, 220, 0.1);
+    }
+    
+    .channel-thumbnail {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        overflow: hidden;
+        border: 4px solid #1e1e1e;
+        margin-right: 20px;
+        flex-shrink: 0;
+    }
+    
+    .channel-thumbnail img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .channel-title-section {
+        padding: 10px 0;
+        max-width: calc(100% - 160px); /* Account for thumbnail width and margin */
+    }
+    
+    .channel-title-section h2 {
+        margin: 0;
+        color: #F5F5DC;
+        font-size: 1.8rem;
+        letter-spacing: 0.5px;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .channel-custom-url {
+        margin: 5px 0 0;
+    }
+    
+    .channel-custom-url a {
+        color: rgba(245, 245, 220, 0.7);
+        text-decoration: none;
+    }
+    
+    .channel-stats {
+        display: flex;
+        justify-content: space-around;
+        margin: 40px 0;
+        margin-top: 60px;
+        background-color: rgba(30, 30, 30, 0.6);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        padding: 20px;
+        border-radius: 15px;
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(245, 245, 220, 0.1);
+    }
+    
+    .stat-item {
+        text-align: center;
+        padding: 0 20px;
+    }
+    
+    .stat-value {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #F5F5DC;
+        margin-bottom: 5px;
+    }
+    
+    .stat-label {
+        font-size: 0.9rem;
+        color: rgba(245, 245, 220, 0.7);
+    }
+    
+    .channel-description-section {
+        margin: 30px 0;
+    }
+    
+    .channel-description {
+        background-color: rgba(30, 30, 30, 0.6);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        padding: 20px;
+        border-radius: 15px;
+        color: rgba(245, 245, 220, 0.9);
+        line-height: 1.6;
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(245, 245, 220, 0.1);
+    }
+    
+    .videos-section {
+        margin-top: 40px;
+    }
+    
+    .charts-container {
+        margin: 30px 0;
+        background-color: rgba(30, 30, 30, 0.6);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        padding: 20px;
+        border-radius: 15px;
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(245, 245, 220, 0.1);
+    }
+    
+    .chart-wrapper {
+        height: 300px;
+    }
+    
+    .videos-table-container {
+        overflow-x: auto;
+        margin-top: 30px;
+    }
+    
+    .videos-table {
+        width: 100%;
+        border-collapse: collapse;
+        background-color: rgba(30, 30, 30, 0.6);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(245, 245, 220, 0.1);
+    }
+    
+    .videos-table th,
+    .videos-table td {
+        padding: 15px;
+        text-align: left;
+        border-bottom: 1px solid rgba(245, 245, 220, 0.1);
+    }
+    
+    .videos-table th {
+        background-color: rgba(74, 59, 110, 0.5);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        color: #F5F5DC;
+    }
+    
+    .videos-table td.video-title-cell {
+        display: flex;
+        align-items: center;
+        max-width: 400px;
+    }
+    
+    .video-thumbnail {
+        width: 120px;
+        height: 68px;
+        overflow: hidden;
+        margin-right: 15px;
+        border-radius: 6px;
+        flex-shrink: 0;
+    }
+    
+    .video-thumbnail img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .video-title {
+        overflow: hidden;
+    }
+    
+    .video-title a {
+        color: #F5F5DC;
+        text-decoration: none;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    
+    .videos-table a {
+        color: #F5F5DC;
+        text-decoration: none;
+    }
+    
+    .videos-table a:hover {
+        text-decoration: underline;
+    }
+    
+    .error-message {
+        background-color: rgba(255, 107, 107, 0.1);
+        border-left: 4px solid #ff6b6b;
+        padding: 20px;
+        border-radius: 0 8px 8px 0;
+        margin: 20px 0;
+    }
+    
+    .no-videos {
+        background-color: rgba(30, 30, 30, 0.7);
+        padding: 20px;
+        border-radius: 12px;
+        text-align: center;
+        margin: 30px 0;
+    }
+    
+    /* Historical Stats Styling */
+    .historical-stats-section {
+        margin: 40px 0;
+    }
+    
+    .historical-controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin: 20px 0;
+    }
+    
+    .metric-toggle {
+        display: flex;
+        background-color: rgba(30, 30, 30, 0.7);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    
+    .metric-btn {
+        background: none;
+        border: none;
+        padding: 10px 20px;
+        color: rgba(245, 245, 220, 0.7);
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .metric-btn.active {
+        background-color: #4A3B6E;
+        color: #F5F5DC;
+    }
+    
+    .time-range-selector select {
+        background-color: rgba(30, 30, 30, 0.7);
+        color: #F5F5DC;
+        padding: 10px 15px;
+        border-radius: 8px;
+        border: 1px solid rgba(245, 245, 220, 0.2);
+        cursor: pointer;
+        outline: none;
+    }
+    
+    .time-range-selector select:focus {
+        border-color: #6a5aad;
+    }
+    
+    #no-data-message {
+        text-align: center;
+        padding: 20px;
+        background-color: rgba(30, 30, 30, 0.7);
+        border-radius: 8px;
+        margin-top: 20px;
+        color: rgba(245, 245, 220, 0.7);
+    }
+    
+    #no-data-message i {
+        color: #6a5aad;
+        margin-right: 5px;
+    }
+    
+    #no-data-message .data-hint {
+        font-size: 0.9rem;
+        font-style: italic;
+        margin-top: 10px;
+        color: rgba(245, 245, 220, 0.5);
+    }
+    
+    .historical-stats-section h3, 
+    .channel-description-section h3,
+    .videos-section h3 {
+        background-color: rgba(30, 30, 30, 0.6);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        padding: 12px 20px;
+        border-radius: 10px;
+        display: inline-block;
+        margin-bottom: 15px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(245, 245, 220, 0.1);
+    }
+</style>
+
+<!-- Include Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set up video views chart
+        const videoCtx = document.getElementById('viewsChart').getContext('2d');
+        
+        const videoChart = new Chart(videoCtx, {
+            type: 'bar',
+            data: {
+                labels: {{ chart_data.video_titles|safe }},
+                datasets: [
+                    {
+                        label: 'Views',
+                        data: {{ chart_data.view_counts|safe }},
+                        backgroundColor: 'rgba(106, 90, 205, 0.5)',
+                        borderColor: 'rgba(106, 90, 205, 1)',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Recent Videos Performance',
+                        color: '#F5F5DC',
+                        font: {
+                            size: 16
+                        }
+                    },
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: {
+                            color: 'rgba(245, 245, 220, 0.8)',
+                            font: {
+                                weight: 'bold'
+                            },
+                            callback: function(value) {
+                                // For large numbers, use K and M suffixes
+                                if (value >= 1000000) {
+                                    return (value / 1000000).toFixed(1) + 'M';
+                                } else if (value >= 1000) {
+                                    return (value / 1000).toFixed(0) + 'K';
+                                }
+                                return value;
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(245, 245, 220, 0.1)'
+                        }
+                    },
+                    y: {
+                        ticks: {
+                            color: 'rgba(245, 245, 220, 0.8)',
+                            font: {
+                                weight: 'bold'
+                            }
+                        },
+                        grid: {
+                            display: false // Remove horizontal grid lines for bar chart
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Historical stats chart setup
+        let historicalChart;
+        const channelId = '{{ channel.id }}';
+        let currentMetric = 'subscribers';
+        let currentTimeRange = '1month';
+        
+        // Event listeners for metric toggle buttons
+        document.querySelectorAll('.metric-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                // Update active state
+                document.querySelectorAll('.metric-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                this.classList.add('active');
+                
+                // Update metric and refresh chart
+                currentMetric = this.getAttribute('data-metric');
+                fetchHistoricalData();
+            });
+        });
+        
+        // Event listener for time range selector
+        document.getElementById('time-range').addEventListener('change', function() {
+            currentTimeRange = this.value;
+            fetchHistoricalData();
+        });
+        
+        // Function to fetch historical data from API
+        function fetchHistoricalData() {
+            const url = `/api/channel/${channelId}/stats/?range=${currentTimeRange}&metric=${currentMetric}`;
+            
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('no-data-message').style.display = 'none';
+                        updateHistoricalChart(data);
+                    } else {
+                        document.getElementById('no-data-message').style.display = 'block';
+                        if (historicalChart) {
+                            historicalChart.destroy();
+                            historicalChart = null;
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching historical data:', error);
+                    document.getElementById('no-data-message').style.display = 'block';
+                });
+        }
+        
+        // Function to update or create the historical chart
+        function updateHistoricalChart(data) {
+            const ctx = document.getElementById('historicalStatsChart').getContext('2d');
+            
+            // Destroy existing chart if it exists
+            if (historicalChart) {
+                historicalChart.destroy();
+            }
+            
+            // Create gradient for background
+            const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+            gradient.addColorStop(0, 'rgba(106, 90, 205, 0.5)');
+            gradient.addColorStop(1, 'rgba(106, 90, 205, 0.1)');
+            
+            // Create new chart
+            historicalChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.dates,
+                    datasets: [{
+                        label: data.metric_label,
+                        data: data.values,
+                        borderColor: 'rgba(106, 90, 205, 1)',
+                        backgroundColor: gradient,
+                        pointBackgroundColor: 'rgba(106, 90, 205, 1)',
+                        pointBorderColor: '#fff',
+                        pointRadius: 2,
+                        pointHoverRadius: 4,
+                        tension: 0.3,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: `${data.metric_label} Growth Over Time`,
+                            color: '#F5F5DC',
+                            font: {
+                                size: 16
+                            }
+                        },
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += new Intl.NumberFormat().format(context.parsed.y);
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                display: false // Remove vertical grid lines
+                            },
+                            ticks: {
+                                color: 'rgba(245, 245, 220, 0.8)',
+                                maxRotation: 45,
+                                minRotation: 0,
+                                autoSkip: true,
+                                maxTicksLimit: 8, // Fewer labels for cleaner look
+                                font: {
+                                    weight: 'bold'
+                                },
+                                callback: function(value, index, values) {
+                                    // Get the label from the chart data
+                                    const label = this.getLabelForValue(value);
+                                    
+                                    // Format date for cleaner display
+                                    if (label.includes('-')) {
+                                        // For dates in yyyy-mm-dd format
+                                        const parts = label.split('-');
+                                        if (parts.length === 3) {
+                                            // If full date, return dd/mm format
+                                            return parts[2] + '/' + parts[1];
+                                        } else if (parts.length === 2) {
+                                            // If year-month format, return month name
+                                            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                                            const monthIndex = parseInt(parts[1]) - 1;
+                                            return monthNames[monthIndex];
+                                        }
+                                    }
+                                    // Default return the original label
+                                    return label;
+                                }
+                            }
+                        },
+                        y: {
+                            beginAtZero: false,
+                            ticks: {
+                                color: 'rgba(245, 245, 220, 0.8)',
+                                font: {
+                                    weight: 'bold'
+                                },
+                                callback: function(value) {
+                                    // For large numbers, use K and M suffixes
+                                    if (value >= 1000000) {
+                                        return (value / 1000000).toFixed(1) + 'M';
+                                    } else if (value >= 1000) {
+                                        return (value / 1000).toFixed(0) + 'K';
+                                    }
+                                    return value;
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(245, 245, 220, 0.1)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Initial data fetch
+        fetchHistoricalData();
+    });
+</script>
+{% endblock %} 
