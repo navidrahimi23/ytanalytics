@@ -4,219 +4,35 @@
 {% block title %}Dashboard | Liminal Analytics{% endblock %}
 
 {% block auth_content %}
-<div class="space-y-8">
-    {% if not profile.youtube_connected %}
+<div class="space-y-10">
     <div class="bg-[rgba(30,30,30,0.6)] backdrop-blur-md rounded-xl p-8 text-center border border-[rgba(245,245,220,0.1)]">
         <h2 class="text-2xl font-bold text-[#d8c5f2] mb-4">Welcome to Liminal Analytics!</h2>
+        {% if not profile.youtube_connected %}
         <p class="text-gray-300 mb-6">Connect your YouTube channel to start tracking your analytics and growth.</p>
         <a href="{% url 'connect_youtube' %}" class="inline-flex items-center px-6 py-3 bg-yt-purple hover:bg-opacity-80 text-[#F5F5DC] font-semibold rounded-xl transition-colors">
             <i class="fab fa-youtube mr-2"></i>
             Connect YouTube
         </a>
-    </div>
-    {% else %}
-    <!-- Stats Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div class="bg-[rgba(30,30,30,0.6)] backdrop-blur-md rounded-xl p-6 border border-[rgba(245,245,220,0.1)]">
-            <div class="flex items-center justify-between mb-2">
-                <h3 class="text-lg font-semibold text-[#d8c5f2]">Subscribers</h3>
-                <span class="text-xs px-2 py-1 rounded-lg bg-purple-900/50 text-purple-300">Total</span>
-            </div>
-            <div class="flex items-end">
-                <span id="total-subscribers" class="text-3xl font-bold text-[#F5F5DC]">0</span>
-                <span id="subscriber-change" class="ml-2 text-sm text-green-400">+0</span>
-            </div>
-        </div>
-
-        <div class="bg-[rgba(30,30,30,0.6)] backdrop-blur-md rounded-xl p-6 border border-[rgba(245,245,220,0.1)]">
-            <div class="flex items-center justify-between mb-2">
-                <h3 class="text-lg font-semibold text-[#d8c5f2]">Views</h3>
-                <span class="text-xs px-2 py-1 rounded-lg bg-blue-900/50 text-blue-300">Total</span>
-            </div>
-            <div class="flex items-end">
-                <span id="total-views" class="text-3xl font-bold text-[#F5F5DC]">0</span>
-                <span id="view-change" class="ml-2 text-sm text-green-400">+0</span>
-            </div>
-        </div>
-
-        <div class="bg-[rgba(30,30,30,0.6)] backdrop-blur-md rounded-xl p-6 border border-[rgba(245,245,220,0.1)]">
-            <div class="flex items-center justify-between mb-2">
-                <h3 class="text-lg font-semibold text-[#d8c5f2]">Watch Time</h3>
-                <span class="text-xs px-2 py-1 rounded-lg bg-green-900/50 text-green-300">Hours</span>
-            </div>
-            <div class="flex items-end">
-                <span id="total-watch-time" class="text-3xl font-bold text-[#F5F5DC]">0</span>
-                <span id="watch-time-change" class="ml-2 text-sm text-green-400">+0</span>
-            </div>
-        </div>
-
-        <div class="bg-[rgba(30,30,30,0.6)] backdrop-blur-md rounded-xl p-6 border border-[rgba(245,245,220,0.1)]">
-            <div class="flex items-center justify-between mb-2">
-                <h3 class="text-lg font-semibold text-[#d8c5f2]">Likes</h3>
-                <span class="text-xs px-2 py-1 rounded-lg bg-pink-900/50 text-pink-300">Total</span>
-            </div>
-            <div class="flex items-end">
-                <span id="total-likes" class="text-3xl font-bold text-[#F5F5DC]">0</span>
-                <span id="like-change" class="ml-2 text-sm text-green-400">+0</span>
-            </div>
-        </div>
+        {% else %}
+        <p class="text-gray-300 mb-6">Your YouTube channel is connected. Check out the Statistics page to see your analytics!</p>
+        <a href="{% url 'statistics' %}" class="inline-flex items-center px-6 py-3 bg-yt-purple hover:bg-opacity-80 text-[#F5F5DC] font-semibold rounded-xl transition-colors">
+            <i class="fas fa-chart-line mr-2"></i>
+            View Statistics
+        </a>
+        {% endif %}
     </div>
 
-    <!-- Time Range Selector -->
-    <div class="flex justify-end">
-        <select id="stats-range" class="bg-[rgba(30,30,30,0.6)] backdrop-blur-md border border-[rgba(245,245,220,0.1)] rounded-xl px-4 py-2 text-[#F5F5DC] focus:outline-none focus:ring-2 focus:ring-yt-purple">
-            <option value="1">1 Day</option>
-            <option value="10">10 Days</option>
-            <option value="30" selected>30 Days</option>
-            <option value="180">6 Months</option>
-            <option value="365">1 Year</option>
-            <option value="all">All Time</option>
-        </select>
-    </div>
-
-    <!-- Recent Videos -->
+    <!-- Dashboard Content - Currently Empty Canvas -->
     <div class="bg-[rgba(30,30,30,0.6)] backdrop-blur-md rounded-xl p-6 border border-[rgba(245,245,220,0.1)]">
-        <h2 class="text-xl font-semibold text-[#d8c5f2] mb-4">Recent Videos</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {% for video in recent_videos %}
-            <div class="bg-[rgba(18,18,18,0.8)] rounded-xl overflow-hidden border border-[rgba(245,245,220,0.1)] group">
-                <div class="relative">
-                    <img src="{{ video.thumbnail }}" alt="{{ video.title }}" class="w-full h-48 object-cover">
-                    <button onclick="openVideoModal('{{ video.url }}')" class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <i class="fas fa-play text-4xl text-[#F5F5DC]"></i>
-                    </button>
-                </div>
-                <div class="p-4">
-                    <h3 class="text-lg font-semibold text-[#F5F5DC] mb-2 line-clamp-2">{{ video.title }}</h3>
-                    <div class="flex justify-between text-sm text-gray-400">
-                        <span><i class="fas fa-eye mr-1"></i>{{ video.view_count|intcomma }}</span>
-                        <span><i class="fas fa-thumbs-up mr-1"></i>{{ video.like_count|intcomma }}</span>
-                        <span><i class="fas fa-comment mr-1"></i>{{ video.comment_count|intcomma }}</span>
-                    </div>
-                </div>
-            </div>
-            {% endfor %}
+        <div class="flex justify-center items-center py-12">
+            <p class="text-gray-400 text-center">Dashboard content coming soon. <br>Visit the Statistics page to view your analytics.</p>
         </div>
     </div>
-
-    <!-- Video Modal -->
-    <div id="videoModal" class="fixed inset-0 bg-black bg-opacity-75 backdrop-blur-sm hidden items-center justify-center z-[100]">
-        <div class="bg-[#1e1e1e] rounded-xl p-4 w-full max-w-4xl mx-4 border border-[rgba(245,245,220,0.1)]">
-            <div class="relative" style="padding-bottom: 56.25%;">
-                <iframe id="videoFrame" class="absolute inset-0 w-full h-full rounded-lg" frameborder="0" allowfullscreen></iframe>
-            </div>
-            <button onclick="closeVideoModal()" class="mt-4 px-4 py-2 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500/20 transition-colors">
-                Close
-            </button>
-        </div>
-    </div>
-    {% endif %}
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-    // Video modal functionality
-    function openVideoModal(url) {
-        const videoId = extractVideoId(url);
-        if (videoId) {
-            const iframe = document.getElementById('videoFrame');
-            iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&origin=${window.location.origin}&enablejsapi=1`;
-            
-            const modal = document.getElementById('videoModal');
-            modal.classList.add('flex');
-            modal.classList.remove('hidden');
-            
-            document.body.style.overflow = 'hidden';
-        } else {
-            window.open(url, '_blank');
-        }
-    }
-    
-    function closeVideoModal() {
-        const modal = document.getElementById('videoModal');
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
-        
-        const iframe = document.getElementById('videoFrame');
-        iframe.src = '';
-        
-        document.body.style.overflow = '';
-    }
-    
-    function extractVideoId(url) {
-        if (url && url.length === 11) return url;
-        
-        const patterns = [
-            /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i,
-            /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/
-        ];
-        
-        for (const pattern of patterns) {
-            const match = url.match(pattern);
-            if (match && match[1]?.length === 11) return match[1];
-            if (match && match[7]?.length === 11) return match[7];
-        }
-        return null;
-    }
-    
-    document.getElementById('videoModal')?.addEventListener('click', function(e) {
-        if (e.target === this) closeVideoModal();
-    });
-
-    // Stats functionality
-    document.addEventListener('DOMContentLoaded', function() {
-        const statsDropdown = document.getElementById('stats-range');
-        if (!statsDropdown) return;
-        
-        function formatNumber(num) {
-            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
-            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
-            return num.toString();
-        }
-        
-        function updateStats(data) {
-            document.getElementById('total-subscribers').textContent = formatNumber(data.subscribers);
-            document.getElementById('subscriber-change').innerHTML = data.subscriber_change >= 0 ? 
-                `<span class="text-green-400">+${formatNumber(data.subscriber_change)}</span>` : 
-                `<span class="text-red-400">${formatNumber(data.subscriber_change)}</span>`;
-            
-            document.getElementById('total-views').textContent = formatNumber(data.views);
-            document.getElementById('view-change').innerHTML = data.view_change >= 0 ? 
-                `<span class="text-green-400">+${formatNumber(data.view_change)}</span>` : 
-                `<span class="text-red-400">${formatNumber(data.view_change)}</span>`;
-            
-            document.getElementById('total-watch-time').textContent = formatNumber(data.watch_time);
-            document.getElementById('watch-time-change').innerHTML = data.watch_time_change >= 0 ? 
-                `<span class="text-green-400">+${formatNumber(data.watch_time_change)}</span>` : 
-                `<span class="text-red-400">${formatNumber(data.watch_time_change)}</span>`;
-            
-            document.getElementById('total-likes').textContent = formatNumber(data.likes);
-            document.getElementById('like-change').innerHTML = data.like_change >= 0 ? 
-                `<span class="text-green-400">+${formatNumber(data.like_change)}</span>` : 
-                `<span class="text-red-400">${formatNumber(data.like_change)}</span>`;
-        }
-        
-        function fetchStats(days) {
-            fetch(`/api/statistics/?days=${days}`)
-                .then(response => {
-                    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.success) updateStats(data);
-                    else console.error('Error fetching stats:', data.error);
-                })
-                .catch(error => console.error('Error fetching stats:', error));
-        }
-        
-        // Initial stats load
-        fetchStats(statsDropdown.value);
-        
-        // Update stats when dropdown changes
-        statsDropdown.addEventListener('change', function() {
-            fetchStats(this.value);
-        });
-    });
+    // Keep any essential functionality here
 </script>
 {% endblock %} 

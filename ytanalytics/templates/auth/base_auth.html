@@ -1,10 +1,43 @@
 {% extends 'base.html' %}
 {% load static %}
 
+{% block head_extra %}
+<style>
+/* Profile dropdown specific styles for better visibility and interaction */
+.dropdown-menu {
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+    transform: translateY(-10px);
+    visibility: hidden;
+    z-index: 100;
+}
+
+.dropdown-menu.show {
+    opacity: 1;
+    transform: translateY(0);
+    visibility: visible;
+}
+
+/* Optimize modal backdrop */
+.modal-backdrop {
+    backdrop-filter: blur(5px);
+    transition: opacity 0.3s ease;
+}
+
+/* Logo animation */
+.logo-container {
+    transition: transform 0.3s ease;
+}
+.logo-container:hover {
+    transform: scale(1.1);
+}
+</style>
+{% endblock %}
+
 {% block content %}
+{% csrf_token %}
 <div class="dashboard-container bg-[#1a1a1a] min-h-screen w-full relative overflow-x-hidden pb-12 z-0 flex flex-col">
     <!-- Navigation Menu -->
-    <nav class="fixed top-5 left-5 z-50 flex gap-2 bg-[rgba(30,30,30,0.6)] backdrop-blur-md p-3 rounded-3xl border border-[rgba(245,245,220,0.1)] items-center">
+    <nav class="fixed top-5 left-5 z-40 flex gap-2 bg-[rgba(30,30,30,0.6)] backdrop-blur-md p-3 rounded-3xl border border-[rgba(245,245,220,0.1)] items-center">
         <a href="{% url 'home' %}" class="logo-container flex items-center gap-2 mr-4 border-r border-[rgba(245,245,220,0.1)] pr-4 transition-transform duration-300 hover:scale-110">
             <img src="{% static 'images/grid-circle.png' %}" alt="Logo" class="w-8 h-8 rounded-full">
             <span class="text-[#d8c5f2] font-bold text-lg">Liminal.</span>
@@ -24,7 +57,7 @@
     </nav>
 
     <!-- User Menu -->
-    <div class="top-right-container fixed top-5 right-5 flex items-center z-50">
+    <div class="top-right-container fixed top-5 right-5 z-50 flex items-center">
         <div id="profile-dropdown-button" class="user-menu-container relative p-1 cursor-pointer z-50 flex justify-center items-center">
             {% if user.userprofile.profile_picture %}
             <img src="{{ user.userprofile.profile_picture.url }}" alt="Profile" class="w-12 h-12 rounded-full object-cover cursor-pointer transition-transform hover:scale-110 border-2 border-opacity-70 border-[#F5F5DC] shadow-lg">
@@ -35,7 +68,7 @@
             {% endif %}
             
             <!-- User Dropdown Menu -->
-            <div id="profile-dropdown" class="dropdown-menu hidden opacity-0 absolute top-full right-0 mt-2 min-w-[220px] bg-[rgba(30,30,30,0.95)] rounded-xl overflow-hidden shadow-xl transition-all">
+            <div id="profile-dropdown" class="dropdown-menu absolute top-full right-0 mt-2 min-w-[220px] bg-[rgba(30,30,30,0.95)] rounded-xl overflow-hidden shadow-xl">
                 <div class="p-4 border-b border-[rgba(245,245,220,0.1)] text-center">
                     <h3 class="text-[#F5F5DC] font-semibold">{{ user.get_full_name|default:user.username }}</h3>
                     <p class="text-sm text-gray-400">@{{ user.username }}</p>
@@ -45,11 +78,11 @@
                         <i class="fas fa-user w-5 opacity-80"></i>
                         <span>View Profile</span>
                     </a>
-                    <button onclick="openProfileModal()" class="w-full flex items-center px-4 py-2 text-[#F5F5DC] hover:bg-[rgba(74,59,110,0.5)] transition-colors">
+                    <button onclick="openProfileModal()" class="w-full text-left flex items-center px-4 py-2 text-[#F5F5DC] hover:bg-[rgba(74,59,110,0.5)] transition-colors">
                         <i class="fas fa-edit w-5 opacity-80"></i>
                         <span>Edit Profile</span>
                     </button>
-                    <button onclick="openConnectModal()" class="w-full flex items-center px-4 py-2 text-[#F5F5DC] hover:bg-[rgba(74,59,110,0.5)] transition-colors">
+                    <button onclick="openConnectModal()" class="w-full text-left flex items-center px-4 py-2 text-[#F5F5DC] hover:bg-[rgba(74,59,110,0.5)] transition-colors">
                         <i class="fas fa-link w-5 opacity-80"></i>
                         <span>Connect Accounts</span>
                     </button>
@@ -164,24 +197,42 @@
 <script>
     // Global event listener for profile dropdown across all pages
     document.addEventListener('DOMContentLoaded', function() {
+        initProfileDropdown();
+        initModalHandlers();
+    });
+    
+    // Initialize profile dropdown functionality
+    function initProfileDropdown() {
         const profileButton = document.getElementById('profile-dropdown-button');
         const profileDropdown = document.getElementById('profile-dropdown');
         
-        if (profileButton && profileDropdown) {
-            profileButton.addEventListener('click', function() {
-                profileDropdown.classList.toggle('hidden');
-                profileDropdown.classList.toggle('opacity-0');
-            });
-            
-            // Close dropdown when clicking outside
-            document.addEventListener('click', function(event) {
-                if (!profileButton.contains(event.target) && !profileDropdown.contains(event.target)) {
-                    profileDropdown.classList.add('hidden');
-                    profileDropdown.classList.add('opacity-0');
-                }
-            });
-        }
+        if (!profileButton || !profileDropdown) return;
         
+        // Improve dropdown toggle functionality
+        profileButton.addEventListener('click', function(e) {
+            e.stopPropagation(); // Prevent event bubbling
+            profileDropdown.classList.toggle('show');
+        });
+        
+        // Close dropdown when clicking anywhere else on the page
+        document.addEventListener('click', function(e) {
+            if (profileDropdown.classList.contains('show') && 
+                !profileButton.contains(e.target) && 
+                !profileDropdown.contains(e.target)) {
+                profileDropdown.classList.remove('show');
+            }
+        });
+        
+        // Add keyboard accessibility
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && profileDropdown.classList.contains('show')) {
+                profileDropdown.classList.remove('show');
+            }
+        });
+    }
+    
+    // Initialize modal handlers
+    function initModalHandlers() {
         // Close modals when backdrop is clicked
         const modalBackdrops = document.querySelectorAll('.modal-backdrop');
         modalBackdrops.forEach(backdrop => {
@@ -191,14 +242,18 @@
                 }
             });
         });
-    });
+        
+        // Add keyboard accessibility for modals
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeAllModals();
+            }
+        });
+    }
 
     function closeAllModals() {
-        const modals = document.querySelectorAll('.modal');
-        modals.forEach(modal => {
-            modal.classList.add('hidden');
-        });
         document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+            backdrop.classList.remove('flex');
             backdrop.classList.add('hidden');
         });
     }
@@ -206,55 +261,128 @@
     function openProfileModal() {
         const modal = document.getElementById('profileModal');
         const content = document.getElementById('profileModalContent');
+        
+        if (!modal || !content) return;
+        
         modal.classList.remove('hidden');
         modal.classList.add('flex');
         
         // Show loading state
         content.innerHTML = '<div class="flex justify-center"><i class="fas fa-spinner fa-spin text-2xl text-purple-400"></i></div>';
         
+        // Get CSRF token from the page
+        const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]').value;
+        
         // Load profile edit form
-        fetch('/edit-profile/?ajax=1')
-            .then(response => response.json())
-            .then(data => {
-                content.innerHTML = data.html;
-            })
-            .catch(error => {
-                content.innerHTML = '<p class="text-red-400">Error loading profile form. Please try again.</p>';
-                console.error('Error loading profile form:', error);
-            });
+        const editProfileUrl = "{% url 'edit_profile' %}?ajax=1";
+        fetch(editProfileUrl, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': csrfToken
+            },
+            credentials: 'include'
+        })
+        .then(response => response.json())
+        .then(data => {
+            content.innerHTML = data.html;
+            
+            // Re-initialize event listeners for the form after it's loaded
+            const form = document.getElementById('profile-form');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const formData = new FormData(form);
+                    
+                    // Get the updated CSRF token from the form
+                    const formCsrfToken = form.querySelector('input[name="csrfmiddlewaretoken"]').value;
+                    
+                    fetch(form.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRFToken': formCsrfToken
+                        },
+                        credentials: 'include'
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Close modal and reload page to show updates
+                            closeProfileModal();
+                            location.reload();
+                        } else if (data.html) {
+                            // Replace form content with error messages
+                            content.innerHTML = data.html;
+                            // Re-attach event listeners to the new form
+                            openProfileModal();
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        content.innerHTML = '<p class="text-red-400">Error saving profile. Please try again.</p>';
+                    });
+                });
+            }
+        })
+        .catch(error => {
+            content.innerHTML = '<p class="text-red-400">Error loading profile form. Please try again.</p>';
+            console.error('Error loading profile form:', error);
+        });
     }
 
     function closeProfileModal() {
-        document.getElementById('profileModal').classList.add('hidden');
-        document.getElementById('profileModal').classList.remove('flex');
+        const modal = document.getElementById('profileModal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
     }
 
     function openConnectModal() {
-        document.getElementById('connectModal').classList.remove('hidden');
-        document.getElementById('connectModal').classList.add('flex');
+        const modal = document.getElementById('connectModal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
     }
 
     function closeConnectModal() {
-        document.getElementById('connectModal').classList.add('hidden');
-        document.getElementById('connectModal').classList.remove('flex');
+        const modal = document.getElementById('connectModal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
     }
 
     function disconnectPlatform(platform) {
         if (confirm(`Are you sure you want to disconnect your ${platform} account?`)) {
+            // Create form data with CSRF token
+            const formData = new FormData();
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            formData.append('csrfmiddlewaretoken', csrfToken);
+            
             // Send AJAX request to disconnect
-            fetch(`/disconnect-${platform}/`, {
+            fetch(`{% url 'disconnect_platform' platform='placeholder' %}`.replace('placeholder', platform), {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-                }
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'include',
+                body: formData
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
                     window.location.reload();
                 } else {
-                    alert('Error disconnecting account: ' + data.error);
+                    alert('Error disconnecting account: ' + (data.error || 'Unknown error'));
                 }
             })
             .catch(error => {
@@ -265,15 +393,4 @@
     }
 </script>
 {% endblock %}
-
-<style>
-/* Add logo hover animation */
-.logo-container {
-    transition: transform 0.3s ease;
-}
-.logo-container:hover {
-    transform: scale(1.1);
-}
-</style>
-
 {% endblock %} 

@@ -2,7 +2,7 @@
 {% load static %}
 
 {% block auth_content %}
-<div class="min-h-screen w-full bg-[#1a1a1a]">
+<div class="min-h-screen w-full bg-[#1a1a1a] relative">
     <div class="max-w-7xl mx-auto px-4 py-8">
         <!-- Search Section -->
         <div class="mb-12">
@@ -144,69 +144,72 @@
 </div>
 
 {% block extra_js %}
+{{ block.super }}
 <script>
-    function connectUser(username) {
-        fetch(`/network/connect/${username}/`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': getCookie('csrftoken'),
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                location.reload();
-            } else {
-                alert(data.error || 'Error connecting with user');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error connecting with user');
-        });
-    }
-
-    function disconnectUser(username) {
-        if (!confirm('Are you sure you want to unlink from this user?')) {
-            return;
+    document.addEventListener('DOMContentLoaded', function() {
+        function connectUser(username) {
+            fetch(`/network/connect/${username}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert(data.error || 'Error connecting with user');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error connecting with user');
+            });
         }
 
-        fetch(`/network/disconnect/${username}/`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': getCookie('csrftoken'),
-                'Content-Type': 'application/json'
+        function disconnectUser(username) {
+            if (!confirm('Are you sure you want to unlink from this user?')) {
+                return;
             }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                location.reload();
-            } else {
-                alert(data.error || 'Error disconnecting from user');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error disconnecting from user');
-        });
-    }
 
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
+            fetch(`/network/disconnect/${username}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert(data.error || 'Error disconnecting from user');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error disconnecting from user');
+            });
+        }
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
                 }
             }
+            return cookieValue;
         }
-        return cookieValue;
-    }
+    });
 </script>
 {% endblock extra_js %}
 {% endblock auth_content %} 

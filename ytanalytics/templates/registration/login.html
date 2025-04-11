@@ -1,60 +1,6 @@
 {% extends 'base.html' %}
 
-{% block content %}
-<div class="login-container">
-    <h1 class="login-title">Sign In to Your Account</h1>
-    
-    {% if messages %}
-    <ul class="messages">
-        {% for message in messages %}
-        <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
-        {% endfor %}
-    </ul>
-    {% endif %}
-    
-    {% if form.errors %}
-    <div class="login-error">
-        Your username and password didn't match. Please try again.
-    </div>
-    {% endif %}
-    
-    <div class="login-form-container">
-        <form method="post" class="login-form">
-            {% csrf_token %}
-            
-            <div class="form-group">
-                <label for="id_username">Username:</label>
-                <input type="text" name="username" id="id_username" required autofocus>
-            </div>
-            
-            <div class="form-group">
-                <label for="id_password">Password:</label>
-                <input type="password" name="password" id="id_password" required>
-            </div>
-            
-            <button type="submit" class="submit-button">Sign In</button>
-            
-            {% if next %}
-                <input type="hidden" name="next" value="{{ next }}">
-            {% endif %}
-        </form>
-        
-        <div class="login-divider">
-            <span>or</span>
-        </div>
-        
-        <div class="oauth-options">
-            <a href="{% url 'social:begin' 'google-oauth2' %}" class="google-signin-btn">
-                <i class="fab fa-google"></i> Sign In with Google
-            </a>
-        </div>
-        
-        <div class="signup-link">
-            <p>Don't have an account? <a href="{% url 'signup' %}">Create one</a></p>
-        </div>
-    </div>
-</div>
-
+{% block head_extra %}
 <style>
     .login-container {
         display: flex;
@@ -80,6 +26,7 @@
         width: 90%;
         max-width: 500px;
         backdrop-filter: blur(10px);
+        border: 1px solid rgba(245, 245, 220, 0.1);
     }
 
     .login-form {
@@ -179,22 +126,6 @@
         margin-right: 10px;
     }
 
-    .signup-link {
-        margin-top: 25px;
-        text-align: center;
-        color: rgba(245, 245, 220, 0.8);
-    }
-
-    .signup-link a {
-        color: #6a5aad;
-        text-decoration: none;
-        font-weight: bold;
-    }
-
-    .signup-link a:hover {
-        text-decoration: underline;
-    }
-
     .login-error {
         background-color: rgba(220, 53, 69, 0.2);
         border: 1px solid #dc3545;
@@ -234,4 +165,64 @@
         color: #F5F5DC;
     }
 </style>
+{% endblock %}
+
+{% block content %}
+<!-- Logo in top left -->
+<div class="fixed top-5 left-5 z-50 flex items-center gap-2 transition-transform duration-300 hover:scale-110">
+    <a href="{% url 'home' %}" class="flex items-center gap-2">
+        <img src="/static/images/grid-circle.png" alt="Logo" class="w-8 h-8 rounded-full">
+        <span class="text-[#d8c5f2] font-bold text-lg">Liminal.</span>
+    </a>
+</div>
+
+<div class="login-container">
+    <h1 class="login-title">Sign In to Your Account</h1>
+    
+    {% if messages %}
+    <ul class="messages">
+        {% for message in messages %}
+        <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+    
+    {% if form.errors %}
+    <div class="login-error">
+        Your username and password didn't match. Please try again.
+    </div>
+    {% endif %}
+    
+    <div class="login-form-container">
+        <form method="post" class="login-form">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label for="id_username">Username:</label>
+                <input type="text" name="username" id="id_username" required autofocus>
+            </div>
+            
+            <div class="form-group">
+                <label for="id_password">Password:</label>
+                <input type="password" name="password" id="id_password" required>
+            </div>
+            
+            <button type="submit" class="submit-button">Sign In</button>
+            
+            {% if next %}
+                <input type="hidden" name="next" value="{{ next }}">
+            {% endif %}
+        </form>
+        
+        <div class="login-divider">
+            <span>or</span>
+        </div>
+        
+        <div class="oauth-options">
+            <a href="{% url 'social:begin' 'google-oauth2' %}" class="google-signin-btn">
+                <i class="fab fa-google"></i> Sign In with Google
+            </a>
+        </div>
+    </div>
+</div>
 {% endblock %} 

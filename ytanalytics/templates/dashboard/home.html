@@ -1,0 +1,288 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block head_extra %}
+<style>
+    /* Reset base styles */
+    body {
+        margin: 0;
+        padding: 0;
+        background: #0A011D !important;
+        min-height: 100vh;
+        width: 100vw;
+        overflow-x: hidden;
+    }
+
+    #content-wrapper {
+        width: 100vw;
+        overflow-x: hidden;
+        padding: 0;
+        margin: 0;
+    }
+
+    main {
+        padding: 0 !important;
+        margin: 0 !important;
+        width: 100%;
+    }
+    
+    /* Override any animations from base */
+    .home-button, .title-box {
+        animation: none !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="home-container relative min-h-screen overflow-hidden flex flex-col">
+    <!-- Header -->
+    <header class="relative w-[611px] h-[145px] mx-auto">
+        <!-- Navigation Box -->
+        <div class="navigation-box absolute w-[550px] h-[89px] left-1/2 top-4 -translate-x-1/2 bg-[#181818] rounded-[37px] flex items-center justify-between px-8">
+            <!-- WE Button -->
+            <a href="{% url 'about_us' %}" class="we-button w-[119px] h-[37px] flex items-center justify-center bg-[#969595] rounded-[50px] transition-all duration-300 hover:scale-105 shadow-[0px_0px_30px_-8px_rgba(255,180,237,0.9)]">
+                <span class="text-[rgba(67,21,57,0.9)] font-bold text-xl">WE.</span>
+            </a>
+            
+            <!-- Logo -->
+            <div class="flex flex-col items-center justify-center">
+                <a href="{% url 'home' %}" class="logo-container relative flex flex-col items-center transition-transform hover:scale-110 duration-300">
+                    <img src="{% static 'images/grid-circle.png' %}" alt="Logo" class="w-[60px] h-[60px]">
+                    <span class="text-[rgba(190,77,164,0.9)] font-bold text-base mt-0.5">LIMINAL.</span>
+                </a>
+            </div>
+            
+            <!-- ENTER Button -->
+            <button id="openLoginModal" class="enter-button w-[119px] h-[37px] flex items-center justify-center bg-[#232323] rounded-[50px] transition-all duration-300 hover:scale-105 shadow-[0px_0px_30px_-8px_rgba(255,180,237,0.9)]">
+                <span class="text-[rgba(255,180,237,0.9)] font-bold text-xl">ENTER.</span>
+            </button>
+        </div>
+    </header>
+    
+    <!-- Updated Main Content with Typewriter Position -->
+    <main class="flex-1 flex flex-col items-center justify-center relative z-10 mt-[80px] mb-[80px]">
+        <div class="center-content flex flex-col items-center w-[666px] gap-[42px] px-[14px]">
+            <!-- Main Heading -->
+            <h1 class="text-[110px] font-bold leading-[100px] text-center text-[#D5CFCF] w-full max-w-[638px] glow-effect">
+                OPEN YOUR<br>MIND
+            </h1>
+            
+            <!-- Future Text -->
+            <div class="text-[30px] font-bold leading-[36px] text-center text-[#969595] w-full max-w-[613px]">
+                <p class="mb-4">WELCOME</p>
+                <p>TO THE FUTURE OF CONTENT ANALYSIS.</p>
+            </div>
+            
+            <!-- Typewriter -->
+            <div class="message-box bg-[rgba(74,59,110,0.1)] p-4 rounded-xl backdrop-blur-md border border-[rgba(245,245,220,0.1)] mb-20 max-w-lg text-center mt-8">
+                <div id="typewriter" class="text-[#F5F5DC] text-lg font-mono"></div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Updated Footer -->
+    <footer class="w-full mt-auto fixed bottom-0 left-0 right-0">
+        <div class="footer-box w-full h-[180px] bg-[#341E36] rounded-t-[54px] relative pt-4">
+            <!-- This is it text -->
+            <div class="text-center">
+                <p class="text-[#9F9B9B] font-bold text-[30px] leading-[25px]">
+                    this is it.<br>
+                    what you've been missing.
+                </p>
+            </div>
+            
+            <!-- LIMINAL text -->
+            <h2 class="text-[150px] font-bold leading-[180px] text-center text-[#5a5a5a] mt-[-20px]">
+                LIMINAL
+            </h2>
+            
+            <!-- CONTACT section -->
+            <div class="absolute left-[350px] top-[80px] text-left">
+                <p class="text-[#717171] text-[15px] mb-1">CONTACT</p>
+                <div class="flex items-center gap-2 justify-center">
+                    <a class="text-[#3A3A3A] text-[14px]">@.ikyy</a>
+                    <span class="w-[13px] h-[13px] text-[rgba(109,47,95,0.9)]">
+                        <i class="fab fa-discord"></i>
+                    </span>
+                </div>
+                <div class="flex items-center gap-2 justify-center">
+                    <a href="https://twitter.com/ignikyy" class="text-[#3A3A3A] text-[14px]">@ignikyy</a>
+                    <span class="w-[13px] h-[13px] text-[rgba(109,47,95,0.9)]">
+                        <i class="fab fa-twitter"></i>
+                    </span>
+                </div>
+            </div>
+            
+            <!-- LEGAL section -->
+            <div class="absolute right-[350px] top-[80px] text-left">
+                <p class="text-[#717171] text-[15px] mb-1">LEGAL</p>
+                <p class="mb-1">
+                    <a href="{% url 'terms' %}" class="text-[#3A3A3A] text-[14px] hover:text-[#5A5A5A]">terms & condition</a>
+                </p>
+                <p>
+                    <a href="{% url 'privacy' %}" class="text-[#3A3A3A] text-[14px] hover:text-[#5A5A5A]">privacy policy</a>
+                </p>
+            </div>
+        </div>
+    </footer>
+</div>
+
+<!-- Login Modal -->
+<div id="loginModal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50 backdrop-blur-sm">
+    <div class="bg-[#1e1e1e] w-[90%] max-w-[400px] rounded-2xl overflow-hidden border border-[rgba(190,77,164,0.3)]">
+        <div class="flex justify-between items-center p-5 bg-[rgba(74,59,110,0.2)] border-b border-[rgba(245,245,220,0.1)]">
+            <h2 class="text-2xl font-bold text-[rgba(255,180,237,0.9)]">Login to Liminal</h2>
+            <button id="closeLoginModal" class="text-[#F5F5DC] text-2xl hover:scale-110 transition-transform">&times;</button>
+        </div>
+        <div class="p-8">
+            <div class="flex flex-col gap-4">
+                <a href="{% url 'social:begin' 'google-oauth2' %}?next=/dashboard/" 
+                   class="flex items-center h-12 bg-[#4285F4] rounded-lg overflow-hidden hover:bg-[#357ae8] hover:-translate-y-0.5 transition-all">
+                    <span class="w-12 h-12 bg-white flex items-center justify-center">
+                        <i class="fab fa-google text-[#4285F4]"></i>
+                    </span>
+                    <span class="flex-1 text-center text-white pr-6">Continue with Google</span>
+                </a>
+                <div class="flex items-center gap-4 my-2">
+                    <div class="flex-1 h-px bg-[rgba(245,245,220,0.3)]"></div>
+                    <span class="text-[rgba(245,245,220,0.7)]">or</span>
+                    <div class="flex-1 h-px bg-[rgba(245,245,220,0.3)]"></div>
+                </div>
+                <form method="post" action="{% url 'login' %}" class="flex flex-col gap-4">
+                    {% csrf_token %}
+                    <input type="text" name="username" id="id_username" placeholder="Name." required
+                           class="p-3 rounded-lg bg-[rgba(30,30,30,0.9)] border border-[rgba(245,245,220,0.3)] text-[#F5F5DC] focus:border-[rgba(190,77,164,0.9)] focus:outline-none">
+                    <input type="password" name="password" id="id_password" placeholder="Password." required
+                           class="p-3 rounded-lg bg-[rgba(30,30,30,0.9)] border border-[rgba(245,245,220,0.3)] text-[#F5F5DC] focus:border-[rgba(190,77,164,0.9)] focus:outline-none">
+                    <button type="submit" 
+                            class="p-3 rounded-lg bg-gradient-to-r from-[#4A3B6E] to-[#6a5aad] text-[#F5F5DC] font-bold hover:from-[#5a4b7e] hover:to-[#7a6abd] hover:-translate-y-0.5 transition-all">
+                        Continue
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Updated Glow Effect */
+    .glow-effect {
+        text-shadow: 
+            0 0 15px rgba(255, 255, 255, 0.7),
+            0 0 30px rgba(255, 255, 255, 0.5),
+            0 0 45px rgba(255, 255, 255, 0.3),
+            0 0 60px rgba(255, 255, 255, 0.2);
+        animation: glow 4s ease-in-out infinite;
+    }
+
+    @keyframes glow {
+        0%, 100% { 
+            text-shadow: 
+                0 0 5px rgba(255, 255, 255, 0.7),
+                0 0 10px rgba(255, 255, 255, 0.5),
+                0 0 15px rgba(255, 255, 255, 0.3);
+    }
+    
+    .message-box {
+        animation: fadeIn 1.5s ease forwards;
+        animation-delay: 0.5s;
+        opacity: 0;
+    }
+    
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('loginModal');
+    const openBtn = document.getElementById('openLoginModal');
+    const closeBtn = document.getElementById('closeLoginModal');
+    
+    openBtn.addEventListener('click', () => {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        document.body.style.overflow = 'hidden';
+    });
+    
+    const closeModal = () => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        document.body.style.overflow = '';
+    };
+    
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+    
+    // Typewriter effect
+    const typewriterElement = document.getElementById('typewriter');
+    const phrases = [
+        "The psychological rule says that when an inner situation is not made conscious, ", 
+        "it happens outside, as fate",
+        "- Carl Jung",
+        "Liminal awaits your arrival."
+    ];
+    
+    // Efficient typewriter implementation
+    async function typewriterEffect() {
+        const typeSpeed = 50;   // Speed of typing in ms
+        const eraseSpeed = 30;  // Speed of erasing in ms
+        const pauseTime = 3000; // Pause time in ms
+        const shortPause = 800; // Short pause time in ms
+        
+        // First phrase typing
+        await typePhrase(phrases[0]);
+        await sleep(shortPause);
+        
+        // Second phrase typing (completing the quote)
+        await typePhrase(phrases[1]);
+        await sleep(pauseTime);
+        
+        // Erase full quote
+        await eraseText();
+        
+        // Type author
+        await typePhrase(phrases[2]);
+        await sleep(pauseTime);
+        
+        // Erase author
+        await eraseText();
+        
+        // Type final message and leave it
+        await typePhrase(phrases[3]);
+    }
+    
+    function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+    
+    async function typePhrase(phrase) {
+        for (let i = 0; i < phrase.length; i++) {
+            typewriterElement.textContent += phrase.charAt(i);
+            await sleep(50);
+        }
+    }
+    
+    async function eraseText() {
+        const text = typewriterElement.textContent;
+        for (let i = text.length; i > 0; i--) {
+            typewriterElement.textContent = text.substring(0, i-1);
+            await sleep(30);
+        }
+    }
+    
+    // Start the typewriter effect
+    typewriterEffect();
+});
+</script>
+{% endblock %} 

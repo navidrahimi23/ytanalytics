@@ -66,6 +66,51 @@ class UserProfile(models.Model):
                 pass
         # Return a placeholder value if no stats available
         return 0
+        
+    def get_video_count(self):
+        """Get video count for display in UI"""
+        # Try to get video count using YouTube API directly
+        if self.youtube_connected and self.youtube_channel:
+            try:
+                from django.conf import settings
+                from social_django.models import UserSocialAuth
+                from google.oauth2.credentials import Credentials
+                from googleapiclient.discovery import build
+                import logging
+                
+                logger = logging.getLogger(__name__)
+                
+                # Get the social auth credentials
+                social = UserSocialAuth.objects.get(user=self.user, provider='google-oauth2')
+                creds_data = social.extra_data
+                
+                # Create credentials object
+                credentials = Credentials(
+                    token=creds_data.get('access_token'),
+                    refresh_token=creds_data.get('refresh_token'),
+                    token_uri='https://oauth2.googleapis.com/token',
+                    client_id=settings.SOCIAL_AUTH_GOOGLE_OAUTH2_KEY,
+                    client_secret=settings.SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET
+                )
+                
+                # Build the YouTube API client
+                youtube = build('youtube', 'v3', credentials=credentials)
+                
+                # Get channel statistics
+                channel_response = youtube.channels().list(
+                    part="statistics",
+                    id=self.youtube_channel
+                ).execute()
+                
+                # Extract and return video count
+                if channel_response.get('items'):
+                    stats = channel_response['items'][0]['statistics']
+                    return int(stats.get('videoCount', 0))
+            except Exception as e:
+                logger.error(f"Error getting video count for {self.user.username}: {str(e)}")
+        
+        # Return a placeholder value if no stats available
+        return 0
 
 # Signal to create/update UserProfile when User is created/updated
 @receiver(post_save, sender=User)

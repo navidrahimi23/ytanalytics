@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}About Us - Liminal{% endblock %}
+
+{% block content %}
+<!-- Remove stars animation from base.html -->
+<style>
+    .stars, .star {
+        display: none !important;
+    }
+</style>
+
+<div class="about-container bg-[#0A011D] min-h-screen relative overflow-hidden flex flex-col">
+    <!-- Logo in top left as home button -->
+    <a href="{% url 'home' %}" class="logo-container fixed top-5 left-5 z-50 flex items-center gap-2 transition-transform duration-300 hover:scale-110">
+        <img src="{% static 'images/grid-circle.png' %}" alt="Logo" class="w-8 h-8 rounded-full">
+        <span class="text-[#d8c5f2] font-bold text-lg">Liminal.</span>
+    </a>
+    
+    <!-- Main Content - Currently Blank -->
+    <main class="flex-1 flex flex-col items-center justify-center relative z-10">
+        <!-- Empty for now as requested -->
+    </main>
+    
+    <!-- Footer -->
+    <footer class="w-full mt-auto">
+        <div class="footer-box w-full h-[100px] bg-[#341E36] relative flex items-center justify-center">
+            <div class="max-w-7xl mx-auto">
+                <div class="mb-2 flex gap-4">
+                    <a href="{% url 'terms' %}" class="text-gray-400 hover:text-gray-200 transition-colors">Terms of Service</a>
+                    <span class="text-gray-600">|</span>
+                    <a href="{% url 'privacy' %}" class="text-gray-400 hover:text-gray-200 transition-colors">Privacy Policy</a>
+                </div>
+                <p class="text-gray-500 text-sm text-center">&copy; {% now "Y" %} Liminal. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+</div>
+{% endblock %} 

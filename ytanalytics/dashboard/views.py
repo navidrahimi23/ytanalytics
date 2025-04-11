@@ -24,6 +24,8 @@ from django.dispatch import receiver
 from datetime import datetime, timedelta
 from django.utils import timezone
 from django.db.models import Q
+from google.oauth2.credentials import Credentials
+from googleapiclient.discovery import build
 
 logger = logging.getLogger(__name__)
 
@@ -53,9 +55,6 @@ def connect_youtube_from_oauth(sender, instance, created, **kwargs):
                 refresh_token = instance.extra_data.get('refresh_token')
                 client_id = instance.extra_data.get('client_id')
                 client_secret = instance.extra_data.get('client_secret')
-                
-                from googleapiclient.discovery import build
-                from google.oauth2.credentials import Credentials
                 
                 # Create credentials object
                 credentials = Credentials(
@@ -141,9 +140,6 @@ def dashboard(request):
         messages.error(request, "An error occurred loading your dashboard. Please try again later.")
         return render(request, 'auth/dashboard.html', context)
 
-def about(request):
-    return render(request, 'about.html')
-
 def custom_logout(request):
     """Custom logout view that handles both Django and social auth logout."""
     try:
@@ -164,7 +160,7 @@ def home_view(request):
     if request.user.is_authenticated:
         return render(request, 'auth/home-logged-in.html')
     else:
-        return render(request, 'home.html')
+        return render(request, 'dashboard/home.html')
 
 @login_required
 def dashboard_view(request):
@@ -281,6 +277,9 @@ def edit_profile(request):
             user_profile = UserProfile.objects.create(user=user)
         
         if request.method == 'POST':
+            logger.debug(f"Processing POST request for edit_profile from user: {user.username}")
+            logger.debug(f"Request headers: {request.headers}")
+            
             # Create forms with POST data
             user_form = ExtendedProfileForm(request.POST, instance=user)
             profile_form = UserProfileForm(request.POST, request.FILES, instance=user_profile)
@@ -312,7 +311,8 @@ def edit_profile(request):
                     html = render_to_string('auth/profile_form.html', {
                         'user_form': user_form,
                         'profile_form': profile_form,
-                    })
+                        'user': user,  # Add user context to ensure form has initial values
+                    }, request=request)  # Pass request to ensure CSRF token is included
                     
                     return JsonResponse({
                         'success': False,
@@ -335,10 +335,12 @@ def edit_profile(request):
                 html = render_to_string('auth/profile_form.html', {
                     'user_form': user_form,
                     'profile_form': profile_form,
-                })
+                    'user': user,  # Add user context to ensure form has initial values
+                }, request=request)  # Pass request to ensure CSRF token is included
                 
                 # Debug logging
                 logger.debug(f"Submit button in HTML: {'submit-button' in html}")
+                logger.debug(f"CSRF token in HTML: {'csrfmiddlewaretoken' in html}")
                 
                 return JsonResponse({
                     'html': html
@@ -364,8 +366,6 @@ def view_profile(request, username):
     """View for displaying a user's profile."""
     # Get the requested user or return 404 if not found
     user = get_object_or_404(User, username=username)
-    
-    # Check if viewing own profile
     is_own_profile = (request.user == user)
     
     # Get link status between current user and profile user
@@ -379,12 +379,16 @@ def view_profile(request, username):
     # Get YouTube analytics data 
     analytics_result = None
     show_private_stats = is_own_profile or link_status == 'mutual'
+    recent_videos = []
     
     if show_private_stats:
         try:
             # For mutual links, get all-time analytics instead of just 30 days
             if not is_own_profile and link_status == 'mutual':
                 analytics_result = get_youtube_analytics(user, days=9999)  # 9999 means all-time data
+                # Get recent videos for mutually linked users
+                if user.userprofile.youtube_connected and user.userprofile.youtube_channel:
+                    recent_videos = get_recent_videos(user, limit=10)
             else:
                 analytics_result = get_youtube_analytics(user)
             
@@ -422,6 +426,7 @@ def view_profile(request, username):
         'analytics_message': analytics_result.get('message') if analytics_result else 'Could not load analytics data',
         'is_mock_data': analytics_result.get('is_mock_data', False) if analytics_result else False,
         'show_private_stats': show_private_stats,
+        'recent_videos': recent_videos,
     }
     
     return render(request, 'auth/view_profile.html', context)
@@ -470,6 +475,25 @@ def network_view(request):
     linked_user_objects = Link.get_linked_users(request.user)
     linked_profiles = UserProfile.objects.filter(user__in=linked_user_objects)
     
+    # Add YouTube analytics data to the linked profiles
+    for profile in linked_profiles:
+        # Initialize with default values from model methods
+        profile.subscribers = profile.get_subscribers()
+        profile.total_views = profile.get_views()
+        profile.video_count = profile.get_video_count()
+        
+        # Try to get analytics data if the user has a YouTube channel
+        if profile.youtube_connected and profile.youtube_channel:
+            try:
+                # Always use a long timeframe to get comprehensive data
+                analytics_result = get_youtube_analytics(profile.user, days=9999)
+                if analytics_result and analytics_result.get('has_data', False):
+                    # Update with real data from analytics
+                    profile.subscribers = analytics_result.get('total_subscribers', profile.subscribers)
+                    profile.total_views = analytics_result.get('views', profile.total_views)
+            except Exception as e:
+                logger.error(f"Error fetching analytics for user {profile.user.username}: {str(e)}")
+    
     # Search functionality
     search_results = []
     if search_query:
@@ -484,6 +508,22 @@ def network_view(request):
         for user in search_results:
             profile = user.userprofile
             profile.link_status = Link.get_link_status(request.user, user)
+            
+            # Add the same data for search results
+            profile.subscribers = profile.get_subscribers()
+            profile.total_views = profile.get_views()
+            profile.video_count = profile.get_video_count()
+            
+            # Try to get analytics data if the user has a YouTube channel
+            if profile.youtube_connected and profile.youtube_channel:
+                try:
+                    analytics_result = get_youtube_analytics(profile.user, days=9999)
+                    if analytics_result and analytics_result.get('has_data', False):
+                        profile.subscribers = analytics_result.get('total_subscribers', profile.subscribers)
+                        profile.total_views = analytics_result.get('views', profile.total_views)
+                except Exception as e:
+                    logger.error(f"Error fetching analytics for search result {profile.user.username}: {str(e)}")
+            
             search_profiles.append(profile)
         
         search_results = search_profiles
@@ -606,10 +646,9 @@ def connect_youtube(request):
     # Build the OAuth URL with explicit scopes
     auth_url = '/auth/login/google-oauth2/'
     
-    # Include all needed scopes
+    # Include only needed scopes for basic analytics
     scopes = [
         'https://www.googleapis.com/auth/youtube.readonly',
-        'https://www.googleapis.com/auth/youtube',
         'https://www.googleapis.com/auth/yt-analytics.readonly'
     ]
     
@@ -655,11 +694,11 @@ def serve_dns_txt(request):
     return FileResponse(open(file_path, 'rb'), content_type='text/plain')
 
 def terms_of_service(request):
-    """View for Terms of Service page"""
+    """View for Terms of Service page."""
     return render(request, 'terms_of_service.html')
 
 def privacy_policy(request):
-    """View for Privacy Policy page"""
+    """View for Privacy Policy page."""
     return render(request, 'privacy_policy.html')
 
 @login_required
@@ -756,7 +795,6 @@ def youtube_channel_view(request, channel_id):
         
         # Check if this is the first time we're recording stats for this channel
         if ChannelStats.objects.filter(channel_id=channel_id).count() <= 1:
-            # Generate some sample historical data for demonstration
             view_count = int(channel.get('view_count', 0))
             subscriber_count = int(channel.get('subscriber_count', 0))
             
@@ -937,7 +975,7 @@ def statistics_api(request):
         
         # Get analytics data for the specified time range
         # Always use mock data on error to ensure we show something
-        analytics_result = get_youtube_analytics(request.user, use_mock_data_on_error=True, days=days)
+        analytics_result = get_youtube_analytics(request.user, days=days)
         
         if analytics_result and analytics_result.get('has_data'):
             basic_metrics = analytics_result.get('basic_metrics', [])
@@ -1326,6 +1364,10 @@ def parse_duration(duration_str):
             
     except Exception:
         return "0:00"  # Default duration if parsing fails
+
+def about_us(request):
+    """Simple view to render the about us page"""
+    return render(request, 'about_us.html')
 
 # Create your views here.
 import google.auth
