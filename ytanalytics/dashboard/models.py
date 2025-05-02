@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
+from django.urls import reverse
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -186,3 +187,32 @@ class Link(models.Model):
             return 'one-way'
         else:
             return None
+
+class Video(models.Model):
+    """Model to store YouTube video data"""
+    video_id = models.CharField(max_length=255, primary_key=True)
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    thumbnail_url = models.URLField(blank=True)
+    channel_id = models.CharField(max_length=255, db_index=True)
+    published_at = models.DateTimeField(null=True, blank=True)
+    
+    # Statistics
+    view_count = models.BigIntegerField(default=0)
+    like_count = models.BigIntegerField(default=0)
+    comment_count = models.BigIntegerField(default=0)
+    
+    # Metadata
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Video'
+        verbose_name_plural = 'Videos'
+        ordering = ['-published_at']
+    
+    def __str__(self):
+        return self.title
+        
+    def get_absolute_url(self):
+        return reverse('video_statistics', kwargs={'video_id': self.video_id})

@@ -20,7 +20,7 @@
 /* Optimize modal backdrop */
 .modal-backdrop {
     backdrop-filter: blur(5px);
-    transition: opacity 0.3s ease;
+    transition: opacity 0.5s ease;
 }
 
 /* Logo animation */
@@ -179,21 +179,10 @@
     <div class="main-content-wrapper flex-1 w-full max-w-7xl mx-auto px-4 py-20 relative z-10">
         {% block auth_content %}{% endblock %}
     </div>
-
-    <!-- Footer -->
-    <footer class="mt-auto bg-[rgba(18,18,18,0.8)] backdrop-blur-md border-t border-[rgba(255,255,255,0.1)] py-4 px-6 text-center">
-        <div class="max-w-7xl mx-auto">
-            <div class="mb-2">
-                <a href="{% url 'terms' %}" class="text-gray-400 hover:text-gray-200 mx-2 transition-colors">Terms of Service</a>
-                <span class="text-gray-600">|</span>
-                <a href="{% url 'privacy' %}" class="text-gray-400 hover:text-gray-200 mx-2 transition-colors">Privacy Policy</a>
-            </div>
-            <p class="text-gray-500 text-sm">&copy; {% now "Y" %} navid.click. All rights reserved.</p>
-        </div>
-    </footer>
 </div>
+{% endblock %}
 
-{% block extra_js %}
+{% block page_js %}
 <script>
     // Global event listener for profile dropdown across all pages
     document.addEventListener('DOMContentLoaded', function() {
@@ -392,5 +381,4 @@
         }
     }
 </script>
-{% endblock %}
 {% endblock %} 

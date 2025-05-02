@@ -193,62 +193,31 @@
     function updateStats(data) {
         analyticsData = data;
         chartDataReady = true;
+
+        // Update stat values and changes
+        document.getElementById('total-subscribers').textContent = formatNumber(data.subscribers || 0);
+        document.getElementById('subscriber-change').textContent = (data.subscriber_change >= 0 ? '+' : '') + formatNumber(data.subscriber_change || 0);
         
-        // Check if there's no analytics data available
-        if (!data.success) {
-            document.getElementById('no-analytics-modal').classList.remove('hidden');
-            document.querySelector('#no-analytics-modal p').textContent = data.message || 'Could not retrieve analytics data.';
-            
-            // Clear all stats
-            document.getElementById('total-subscribers').textContent = '0';
-            document.getElementById('subscriber-change').textContent = '+0';
-            document.getElementById('total-views').textContent = '0';
-            document.getElementById('view-change').textContent = '+0';
-            document.getElementById('total-watch-time').textContent = '0';
-            document.getElementById('watch-time-change').textContent = '+0';
-            document.getElementById('total-likes').textContent = '0';
-            document.getElementById('like-change').textContent = '+0';
-            
-            // Clear charts
-            if (viewsChart) viewsChart.destroy();
-            if (subscribersChart) subscribersChart.destroy();
-            if (watchTimeChart) watchTimeChart.destroy();
-            hideLoading();
-            return;
-        }
+        document.getElementById('total-views').textContent = formatNumber(data.views || 0);
+        document.getElementById('view-change').textContent = (data.view_change >= 0 ? '+' : '') + formatNumber(data.view_change || 0);
         
-        document.getElementById('no-analytics-modal').classList.add('hidden');
+        document.getElementById('total-watch-time').textContent = formatNumber(Math.round(data.watch_time / 60) || 0);
+        document.getElementById('watch-time-change').textContent = (data.watch_time_change >= 0 ? '+' : '') + formatNumber(Math.round(data.watch_time_change / 60) || 0);
         
-        // Update summary stats
-        document.getElementById('total-subscribers').textContent = formatNumber(data.subscribers);
-        document.getElementById('subscriber-change').textContent = (data.subscriber_change >= 0 ? '+' : '') + formatNumber(data.subscriber_change);
-        document.getElementById('subscriber-change').className = data.subscriber_change >= 0 ? 'ml-2 text-sm text-green-500' : 'ml-2 text-sm text-red-500';
+        document.getElementById('total-likes').textContent = formatNumber(data.likes || 0);
+        document.getElementById('like-change').textContent = (data.like_change >= 0 ? '+' : '') + formatNumber(data.like_change || 0);
         
-        document.getElementById('total-views').textContent = formatNumber(data.views);
-        document.getElementById('view-change').textContent = (data.view_change >= 0 ? '+' : '') + formatNumber(data.view_change);
-        document.getElementById('view-change').className = data.view_change >= 0 ? 'ml-2 text-sm text-green-500' : 'ml-2 text-sm text-red-500';
-        
-        document.getElementById('total-watch-time').textContent = formatNumber(data.watch_time);
-        document.getElementById('watch-time-change').textContent = (data.watch_time_change >= 0 ? '+' : '') + formatNumber(data.watch_time_change);
-        document.getElementById('watch-time-change').className = data.watch_time_change >= 0 ? 'ml-2 text-sm text-green-500' : 'ml-2 text-sm text-red-500';
-        
-        // Estimated likes (if available)
-        const estimatedLikes = Math.round(data.views * 0.05); // Simple estimation based on views
-        document.getElementById('total-likes').textContent = formatNumber(estimatedLikes);
-        
-        // If we have watch time change, we can estimate like change similarly
-        const estimatedLikeChange = Math.round(data.view_change * 0.05);
-        document.getElementById('like-change').textContent = (estimatedLikeChange >= 0 ? '+' : '') + formatNumber(estimatedLikeChange);
-        document.getElementById('like-change').className = estimatedLikeChange >= 0 ? 'ml-2 text-sm text-green-500' : 'ml-2 text-sm text-red-500';
-        
-        // Initialize or update charts if Chart.js is loaded
-        if (chartJsLoaded) {
+        // Initialize or update charts if Chart.js is loaded and we have valid data
+        if (chartJsLoaded && data.success && data.dates && data.dates.length > 0) {
             initializeCharts();
+        } else {
+            document.getElementById('no-analytics-modal').classList.remove('hidden');
         }
         
         hideLoading();
     }
-    
+        
+
     // Common chart options for minimalistic design
     function getChartOptions() {
         return {
@@ -336,6 +305,15 @@
         const data = analyticsData;
         if (!data || !data.success) return;
         
+        // Make sure we have all required arrays with at least one element
+        if (!data.dates || !data.dates.length || 
+            !data.views_data || !data.views_data.length || 
+            !data.watch_time_data || !data.watch_time_data.length || 
+            !data.subscribers_data || !data.subscribers_data.length) {
+            console.warn("Chart data arrays are empty or missing");
+            return;
+        }
+        
         const dates = data.dates || [];
         const viewsData = data.views_data || [];
         const watchTimeData = data.watch_time_data || [];
@@ -344,94 +322,121 @@
         // Convert watch time from minutes to hours
         const watchTimeHours = watchTimeData.map(minutes => minutes / 60);
         
-        // Views Chart
-        const viewsCtx = document.getElementById('viewsChart').getContext('2d');
-        if (viewsChart) viewsChart.destroy();
-        viewsChart = new Chart(viewsCtx, {
-            type: 'line',
-            data: {
-                labels: dates,
-                datasets: [{
-                    data: viewsData,
-                    borderColor: 'rgba(59, 130, 246, 0.8)',
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                    fill: true,
-                }]
-            },
-            options: getChartOptions()
-        });
-        
-        // Subscribers Chart
-        const subscribersCtx = document.getElementById('subscribersChart').getContext('2d');
-        if (subscribersChart) subscribersChart.destroy();
-        subscribersChart = new Chart(subscribersCtx, {
-            type: 'line',
-            data: {
-                labels: dates,
-                datasets: [{
-                    data: subscribersData,
-                    borderColor: 'rgba(124, 58, 237, 0.8)',
-                    backgroundColor: 'rgba(124, 58, 237, 0.1)',
-                    fill: true,
-                }]
-            },
-            options: getChartOptions()
-        });
-        
-        // Watch Time Chart
-        const watchTimeCtx = document.getElementById('watchTimeChart').getContext('2d');
-        if (watchTimeChart) watchTimeChart.destroy();
-        watchTimeChart = new Chart(watchTimeCtx, {
-            type: 'line',
-            data: {
-                labels: dates,
-                datasets: [{
-                    data: watchTimeHours,
-                    borderColor: 'rgba(16, 185, 129, 0.8)',
-                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                    fill: true,
-                }]
-            },
-            options: getChartOptions()
-        });
-        
-        chartsInitialized = true;
+        try {
+            // Views Chart
+            const viewsCtx = document.getElementById('viewsChart').getContext('2d');
+            if (viewsChart) viewsChart.destroy();
+            viewsChart = new Chart(viewsCtx, {
+                type: 'line',
+                data: {
+                    labels: dates,
+                    datasets: [{
+                        data: viewsData,
+                        borderColor: 'rgba(59, 130, 246, 0.8)',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        fill: true,
+                    }]
+                },
+                options: getChartOptions()
+            });
+            
+            // Subscribers Chart
+            const subscribersCtx = document.getElementById('subscribersChart').getContext('2d');
+            if (subscribersChart) subscribersChart.destroy();
+            subscribersChart = new Chart(subscribersCtx, {
+                type: 'line',
+                data: {
+                    labels: dates,
+                    datasets: [{
+                        data: subscribersData,
+                        borderColor: 'rgba(124, 58, 237, 0.8)',
+                        backgroundColor: 'rgba(124, 58, 237, 0.1)',
+                        fill: true,
+                    }]
+                },
+                options: getChartOptions()
+            });
+            
+            // Watch Time Chart
+            const watchTimeCtx = document.getElementById('watchTimeChart').getContext('2d');
+            if (watchTimeChart) watchTimeChart.destroy();
+            watchTimeChart = new Chart(watchTimeCtx, {
+                type: 'line',
+                data: {
+                    labels: dates,
+                    datasets: [{
+                        data: watchTimeHours,
+                        borderColor: 'rgba(16, 185, 129, 0.8)',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        fill: true,
+                    }]
+                },
+                options: getChartOptions()
+            });
+            
+            chartsInitialized = true;
+        } catch (error) {
+            console.error("Error initializing charts:", error);
+        }
     }
-    
-    // Fetch analytics data with debouncing to prevent excessive API calls
-    let fetchTimeout;
+
+    // Fetch analytics data from the server
     function fetchAnalyticsData() {
-        clearTimeout(fetchTimeout);
-        fetchTimeout = setTimeout(() => {
-            const timeRange = document.getElementById('time-range').value;
-            showLoading();
-            
-            // Reset charts initialization flag to force redraw
-            chartsInitialized = false;
-            
-            fetch(`/dashboard/api/statistics/?days=${timeRange}`, {
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`Network error: ${response.status}`);
+        console.log('Fetching analytics data...');
+        showLoading();
+        const timeRange = document.getElementById('time-range')?.value || '30';
+        console.log('Time range:', timeRange);
+        
+        // Get CSRF token from cookie
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
                     }
-                    return response.json();
-                })
-                .then(data => {
-                    updateStats(data);
-                })
-                .catch(error => {
-                    console.error('Error fetching analytics:', error);
-                    document.getElementById('no-analytics-modal').classList.remove('hidden');
-                    document.querySelector('#no-analytics-modal p').textContent = `Error retrieving analytics data: ${error.message}`;
-                    hideLoading();
-                });
-        }, 300);
+                }
+            }
+            return cookieValue;
+        }
+        
+        const csrfToken = getCookie('csrftoken');
+        console.log('CSRF Token available:', !!csrfToken);
+        
+        fetch(`/dashboard/api/analytics/?range=${timeRange}`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': csrfToken,
+                'Accept': 'application/json'
+            },
+            credentials: 'same-origin'  // Include cookies in the request
+        })
+        .then(response => {
+            console.log('Response status:', response.status);
+            console.log('Response headers:', Object.fromEntries([...response.headers]));
+            return response.json();
+        })
+        .then(data => {
+            console.log('Received data:', data);
+            if (data.success) {
+                console.log('Updating stats with data');
+                updateStats(data);
+            } else {
+                console.error('Error fetching analytics:', data.message);
+                document.getElementById('no-analytics-modal').classList.remove('hidden');
+                hideLoading();
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching analytics:', error);
+            document.getElementById('no-analytics-modal').classList.remove('hidden');
+            hideLoading();
+        });
     }
-    
+
     // Set up event listeners
     document.addEventListener('DOMContentLoaded', function() {
         // Fetch initial data
@@ -454,8 +459,6 @@
             }, 250);
         });
     });
-</script>
+    </script>
 {% endif %}
 {% endblock extra_js %}
-
-

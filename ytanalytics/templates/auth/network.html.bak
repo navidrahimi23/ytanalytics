@@ -219,4 +219,4 @@
     });
 </script>
 {% endblock extra_js %}
-{% endblock auth_content %}
+{% endblock auth_content %} 

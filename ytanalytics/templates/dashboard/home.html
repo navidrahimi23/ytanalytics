@@ -24,21 +24,51 @@
         padding: 0 !important;
         margin: 0 !important;
         width: 100%;
+        min-height: 150vh; /* Extend the height of the page */
     }
     
     /* Override any animations from base */
     .home-button, .title-box {
         animation: none !important;
     }
+
+    /* Sequential loading animations */
+    .navigation-box {
+        opacity: 0;
+        animation: fadeIn 0.7s ease-out forwards;
+        animation-delay: 0.2s; /* First element to load */
+    }
+
+    .main-heading {
+        opacity: 0;
+        animation: fadeIn 0.7s ease-out forwards;
+        animation-delay: 0.9s; /* Second element to load */
+    }
+
+    .welcome-text {
+        opacity: 0;
+        animation: fadeIn 0.7s ease-out forwards;
+        animation-delay: 1.6s; /* Third element to load */
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(-15px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="home-container relative min-h-screen overflow-hidden flex flex-col">
-    <!-- Header -->
-    <header class="relative w-[611px] h-[145px] mx-auto">
-        <!-- Navigation Box -->
-        <div class="navigation-box absolute w-[550px] h-[89px] left-1/2 top-4 -translate-x-1/2 bg-[#181818] rounded-[37px] flex items-center justify-between px-8">
+<div class="home-container relative min-h-[150vh] overflow-hidden flex flex-col">
+    <!-- Navigation Bar -->
+    <div class="navigation-container flex justify-center w-full pt-6 z-10 relative">
+        <div class="navigation-box w-[550px] h-[89px] bg-[#181818] rounded-[37px] flex items-center justify-between px-8">
             <!-- WE Button -->
             <a href="{% url 'about_us' %}" class="we-button w-[119px] h-[37px] flex items-center justify-center bg-[#969595] rounded-[50px] transition-all duration-300 hover:scale-105 shadow-[0px_0px_30px_-8px_rgba(255,180,237,0.9)]">
                 <span class="text-[rgba(67,21,57,0.9)] font-bold text-xl">WE.</span>
@@ -57,74 +87,36 @@
                 <span class="text-[rgba(255,180,237,0.9)] font-bold text-xl">ENTER.</span>
             </button>
         </div>
-    </header>
+    </div>
     
-    <!-- Updated Main Content with Typewriter Position -->
-    <main class="flex-1 flex flex-col items-center justify-center relative z-10 mt-[80px] mb-[80px]">
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col items-center justify-start relative z-10 mt-[40px] pb-[250px]">
         <div class="center-content flex flex-col items-center w-[666px] gap-[42px] px-[14px]">
             <!-- Main Heading -->
-            <h1 class="text-[110px] font-bold leading-[100px] text-center text-[#D5CFCF] w-full max-w-[638px] glow-effect">
+            <h1 class="main-heading text-[110px] font-bold leading-[100px] text-center text-[#D5CFCF] w-full max-w-[638px] glow-effect">
                 OPEN YOUR<br>MIND
             </h1>
             
-            <!-- Future Text -->
-            <div class="text-[30px] font-bold leading-[36px] text-center text-[#969595] w-full max-w-[613px]">
-                <p class="mb-4">WELCOME</p>
-                <p>TO THE FUTURE OF CONTENT ANALYSIS.</p>
+
+            <div class="welcome-text text-[30px] leading-[36px] text-center text-[#969595] w-full max-w-[613px]">
+                <p class="mb-4 font-bold">WELCOME</p>
+                <p class="font-normal">TO THE FUTURE OF CONTENT ANALYSIS.</p>
             </div>
             
             <!-- Typewriter -->
             <div class="message-box bg-[rgba(74,59,110,0.1)] p-4 rounded-xl backdrop-blur-md border border-[rgba(245,245,220,0.1)] mb-20 max-w-lg text-center mt-8">
                 <div id="typewriter" class="text-[#F5F5DC] text-lg font-mono"></div>
             </div>
-        </div>
-    </main>
-    
-    <!-- Updated Footer -->
-    <footer class="w-full mt-auto fixed bottom-0 left-0 right-0">
-        <div class="footer-box w-full h-[180px] bg-[#341E36] rounded-t-[54px] relative pt-4">
-            <!-- This is it text -->
-            <div class="text-center">
-                <p class="text-[#9F9B9B] font-bold text-[30px] leading-[25px]">
-                    this is it.<br>
-                    what you've been missing.
-                </p>
-            </div>
             
-            <!-- LIMINAL text -->
-            <h2 class="text-[150px] font-bold leading-[180px] text-center text-[#5a5a5a] mt-[-20px]">
-                LIMINAL
-            </h2>
-            
-            <!-- CONTACT section -->
-            <div class="absolute left-[350px] top-[80px] text-left">
-                <p class="text-[#717171] text-[15px] mb-1">CONTACT</p>
-                <div class="flex items-center gap-2 justify-center">
-                    <a class="text-[#3A3A3A] text-[14px]">@.ikyy</a>
-                    <span class="w-[13px] h-[13px] text-[rgba(109,47,95,0.9)]">
-                        <i class="fab fa-discord"></i>
-                    </span>
-                </div>
-                <div class="flex items-center gap-2 justify-center">
-                    <a href="https://twitter.com/ignikyy" class="text-[#3A3A3A] text-[14px]">@ignikyy</a>
-                    <span class="w-[13px] h-[13px] text-[rgba(109,47,95,0.9)]">
-                        <i class="fab fa-twitter"></i>
-                    </span>
+            <!-- Additional content section -->
+            <div class="additional-content-section w-full mt-[100px] flex flex-col items-center">
+                <!-- Empty for now, but can be filled with more features -->
+                <div class="feature-placeholder h-[300px] w-full flex items-center justify-center">
+                    <div class="text-[#969595] text-xl opacity-50">• • • Additional Features Space • • •</div>
                 </div>
             </div>
-            
-            <!-- LEGAL section -->
-            <div class="absolute right-[350px] top-[80px] text-left">
-                <p class="text-[#717171] text-[15px] mb-1">LEGAL</p>
-                <p class="mb-1">
-                    <a href="{% url 'terms' %}" class="text-[#3A3A3A] text-[14px] hover:text-[#5A5A5A]">terms & condition</a>
-                </p>
-                <p>
-                    <a href="{% url 'privacy' %}" class="text-[#3A3A3A] text-[14px] hover:text-[#5A5A5A]">privacy policy</a>
-                </p>
-            </div>
         </div>
-    </footer>
+    </div>
 </div>
 
 <!-- Login Modal -->
@@ -181,23 +173,13 @@
                 0 0 5px rgba(255, 255, 255, 0.7),
                 0 0 10px rgba(255, 255, 255, 0.5),
                 0 0 15px rgba(255, 255, 255, 0.3);
+        }
     }
     
     .message-box {
         animation: fadeIn 1.5s ease forwards;
-        animation-delay: 0.5s;
+        animation-delay: 2.2s; /* Delay after welcome text appears */
         opacity: 0;
-    }
-    
-    @keyframes fadeIn {
-        from {
-            opacity: 0;
-            transform: translateY(-20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
     }
 </style>
 
@@ -285,4 +267,8 @@ document.addEventListener('DOMContentLoaded', function() {
     typewriterEffect();
 });
 </script>
+
+{% block footer %}
+<!-- Empty block to ensure the footer from base.html is hidden on the home page since home uses a unique layout -->
+{% endblock %}
 {% endblock %} 

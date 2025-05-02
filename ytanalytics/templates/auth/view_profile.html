@@ -479,15 +479,15 @@
                 </h2>
                 
                 <div class="analytics-container">
-                    {% if analytics_result.basic_metrics %}
+                    {% if analytics_result and analytics_result.has_data %}
                         <div class="analytics-card">
                             <div class="analytics-label">Total Views</div>
-                            <div class="analytics-value">{{ analytics_result.total_views|default:"0" }}</div>
+                            <div class="analytics-value">{{ analytics_result.views|default:"0" }}</div>
                         </div>
                         
                         <div class="analytics-card">
                             <div class="analytics-label">Watch Time</div>
-                            <div class="analytics-value">{{ analytics_result.watch_time_hours|default:"0" }} hrs</div>
+                            <div class="analytics-value">{{ analytics_result.watch_time|default:"0" }} hrs</div>
                         </div>
                         
                         <div class="analytics-card">
@@ -515,7 +515,7 @@
                                 </div>
                             </div>
                             <div class="video-info" style="padding: 12px;">
-                                <h3 class="video-title" style="font-size: 0.95rem; color: #F5F5DC; margin-bottom: 8px; line-height: 1.4; max-height: 2.8em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
+                                <h3 class="video-title" style="font-size: 0.95rem; color: #F5F5DC; margin-bottom: 8px; line-height: 1.4; max-height: 2.8em; overflow: hidden; display: -webkit-box; display: box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; box-orient: vertical;">
                                     {{ video.title }}
                                 </h3>
                                 <div class="video-stats" style="display: flex; justify-content: space-between;">

@@ -29,7 +29,6 @@ DEBUG = True
 
 # API keys loaded from environment variables
 YT_API_KEY = config('YT_API_KEY', default='')
-print(f"Loaded YouTube API Key: {YT_API_KEY[:5]}...")  # Only print first 5 chars for security
 
 # Google OAuth2 credentials loaded from the .env file
 SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = config('SOCIAL_AUTH_GOOGLE_OAUTH2_KEY')
@@ -38,11 +37,6 @@ SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = [
     'https://www.googleapis.com/auth/userinfo.email',
     'https://www.googleapis.com/auth/userinfo.profile',
     'https://www.googleapis.com/auth/youtube.readonly',
-    'https://www.googleapis.com/auth/yt-analytics.readonly',
-]
-
-# These scopes will be requested in the secondary analytics permission flow
-YOUTUBE_ANALYTICS_SCOPES = [
     'https://www.googleapis.com/auth/yt-analytics.readonly',
 ]
 

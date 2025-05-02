@@ -4,35 +4,388 @@
 {% block title %}Dashboard | Liminal Analytics{% endblock %}
 
 {% block auth_content %}
-<div class="space-y-10">
-    <div class="bg-[rgba(30,30,30,0.6)] backdrop-blur-md rounded-xl p-8 text-center border border-[rgba(245,245,220,0.1)]">
+<div class="flex flex-col md:flex-row gap-6">
+    <!-- Left side content - Empty for now -->
+    <div class="w-full md:w-2/3 bg-[rgba(30,30,30,0.6)] backdrop-blur-md rounded-xl p-6 border border-[rgba(245,245,220,0.1)]">
+        <div class="flex justify-center items-center h-full py-12">
+            {% if not profile.youtube_connected %}
+            <div class="text-center">
         <h2 class="text-2xl font-bold text-[#d8c5f2] mb-4">Welcome to Liminal Analytics!</h2>
-        {% if not profile.youtube_connected %}
         <p class="text-gray-300 mb-6">Connect your YouTube channel to start tracking your analytics and growth.</p>
         <a href="{% url 'connect_youtube' %}" class="inline-flex items-center px-6 py-3 bg-yt-purple hover:bg-opacity-80 text-[#F5F5DC] font-semibold rounded-xl transition-colors">
             <i class="fab fa-youtube mr-2"></i>
             Connect YouTube
         </a>
+            </div>
+            {% else %}
+            <div class="text-center">
+                <p class="text-gray-400">Dashboard content will appear here soon.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Right side - Videos column -->
+    <div class="w-full md:w-1/3 bg-[rgba(30,30,30,0.6)] backdrop-blur-md rounded-xl p-6 border border-[rgba(245,245,220,0.1)]">
+        <h3 class="text-xl font-semibold text-[#d8c5f2] mb-4">Your Videos</h3>
+        
+        {% if profile.youtube_connected %}
+            {% if videos %}
+                <div class="h-[600px] overflow-y-auto pr-2 space-y-4">
+                    {% for video in videos %}
+                        <div class="video-card bg-[rgba(40,40,40,0.7)] rounded-lg overflow-hidden">
+                            <div class="relative">
+                                <img src="{{ video.thumbnail }}" alt="{{ video.title }}" class="w-full object-cover h-36">
+                                <span class="absolute bottom-2 right-2 bg-black bg-opacity-70 text-white text-xs px-1 py-0.5 rounded">
+                                    {{ video.duration }}
+                                </span>
+                            </div>
+                            <div class="p-3">
+                                <a href="{{ video.url }}" target="_blank" class="block">
+                                    <h4 class="text-[#F5F5DC] font-medium text-sm mb-2 line-clamp-2 hover:text-yt-purple">{{ video.title }}</h4>
+                                </a>
+                                <div class="flex justify-between text-xs text-gray-400">
+                                    <span><i class="fas fa-eye mr-1"></i>{{ video.views|intcomma }}</span>
+                                    <button 
+                                        type="button"
+                                        class="video-stats-btn text-yt-purple hover:underline cursor-pointer"
+                                        data-video-id="{{ video.id }}"
+                                        data-video-title="{{ video.title }}"
+                                        data-video-views="{{ video.views }}"
+                                    >
+                                        Stats <i class="fas fa-chart-bar ml-1"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-8 text-gray-400">
+                    <p>No videos found in your channel.</p>
+                </div>
+            {% endif %}
         {% else %}
-        <p class="text-gray-300 mb-6">Your YouTube channel is connected. Check out the Statistics page to see your analytics!</p>
-        <a href="{% url 'statistics' %}" class="inline-flex items-center px-6 py-3 bg-yt-purple hover:bg-opacity-80 text-[#F5F5DC] font-semibold rounded-xl transition-colors">
-            <i class="fas fa-chart-line mr-2"></i>
-            View Statistics
-        </a>
+            <div class="text-center py-8 text-gray-400">
+                <p>Connect your YouTube channel to see your videos.</p>
+            </div>
         {% endif %}
     </div>
+</div>
 
-    <!-- Dashboard Content - Currently Empty Canvas -->
-    <div class="bg-[rgba(30,30,30,0.6)] backdrop-blur-md rounded-xl p-6 border border-[rgba(245,245,220,0.1)]">
-        <div class="flex justify-center items-center py-12">
-            <p class="text-gray-400 text-center">Dashboard content coming soon. <br>Visit the Statistics page to view your analytics.</p>
+<!-- Video Statistics Modal -->
+<div id="videoStatsModal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 hidden">
+    <div class="bg-[rgba(30,30,30,0.9)] backdrop-blur-md rounded-xl p-6 border border-[rgba(245,245,220,0.1)] w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-semibold text-[#d8c5f2]" id="modalVideoTitle">Video Statistics</h3>
+            <button type="button" class="text-gray-400 hover:text-white text-2xl" id="closeVideoModal">&times;</button>
+        </div>
+        
+        <!-- Time Range Selector -->
+        <div class="mb-6">
+            <label for="video-time-range" class="block text-gray-300 mb-2">Time Range:</label>
+            <select id="video-time-range" class="bg-[rgba(40,40,40,0.7)] text-[#F5F5DC] rounded px-3 py-2 w-full md:w-48">
+                <option value="7">Last 7 days</option>
+                <option value="28" selected>Last 28 days</option>
+                <option value="90">Last 90 days</option>
+                <option value="365">Last year</option>
+                <option value="all">All time</option>
+            </select>
+        </div>
+        
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div class="bg-[rgba(40,40,40,0.7)] rounded-lg p-4">
+                <div class="flex items-start">
+                    <div class="p-3 rounded-full bg-blue-500 bg-opacity-20 mr-4">
+                        <i class="fas fa-eye text-blue-500"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-gray-300 text-sm font-medium">Total Views</h4>
+                        <p class="text-[#F5F5DC] text-2xl font-bold" id="modalVideoViews">0</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-[rgba(40,40,40,0.7)] rounded-lg p-4">
+                <div class="flex items-start">
+                    <div class="p-3 rounded-full bg-green-500 bg-opacity-20 mr-4">
+                        <i class="fas fa-clock text-green-500"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-gray-300 text-sm font-medium">Watch Time</h4>
+                        <p class="text-[#F5F5DC] text-2xl font-bold" id="modalVideoWatchTime">0 hours</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Views Graph -->
+        <div class="bg-[rgba(40,40,40,0.7)] rounded-lg p-4 mb-4">
+            <h4 class="text-gray-300 mb-4 font-medium">Views Over Time</h4>
+            <div class="h-64">
+                <canvas id="videoViewsChart"></canvas>
+            </div>
+    </div>
+
+        <!-- Loading indicator -->
+        <div id="videoStatsLoading" class="text-center py-4 hidden">
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-yt-purple"></div>
+            <p class="text-gray-300 mt-2">Loading statistics...</p>
+    </div>
+
+        <!-- Error message -->
+        <div id="videoStatsError" class="text-center py-4 hidden">
+            <i class="fas fa-exclamation-circle text-red-500 text-2xl"></i>
+            <p class="text-gray-300 mt-2">Could not load video statistics.</p>
         </div>
     </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
+<!-- Load Chart.js from CDN with integrity -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js" integrity="sha256-+8RZJLOWWrKgAQm9CeCzpDR6+upCujdLJ+0gFR+sn2c=" crossorigin="anonymous"></script>
 <script>
-    // Keep any essential functionality here
+    // Declare global variables and functions
+    let currentVideoId = null;
+    let viewsChart = null;
+    let modal, closeButton, videoTitleElement, videoViewsElement, videoWatchTimeElement, timeRangeSelector, loadingIndicator, errorMessage;
+
+    // Helper function to reset modal state
+    function resetModal() {
+        // Clear previous data
+        if (viewsChart) {
+            viewsChart.destroy();
+            viewsChart = null;
+        }
+        
+        // Hide error, show loading
+        errorMessage.classList.add('hidden');
+        loadingIndicator.classList.remove('hidden');
+    }
+    
+    // Helper function to load video stats with time range
+    function loadVideoStats(videoId, timeRange) {
+        console.log('Loading stats for video:', videoId, 'range:', timeRange);
+        
+        // Show loading indicator
+        loadingIndicator.classList.remove('hidden');
+        errorMessage.classList.add('hidden');
+        
+        // Make actual API call to get stats
+        fetch(`/dashboard/api/video/${videoId}/stats/?range=${timeRange}`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Network error: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Hide loading indicator
+            loadingIndicator.classList.add('hidden');
+            
+            if (!data.success) {
+                throw new Error(data.message || 'Error loading video statistics');
+            }
+            
+            // Create chart with actual data
+            createViewsChart(data.dates, data.views);
+            
+            // Update summary metrics
+            videoViewsElement.textContent = formatNumber(data.total_views || 0);
+            videoWatchTimeElement.textContent = `${data.watch_time || 0} hours`;
+        })
+        .catch(error => {
+            // Show error message
+            loadingIndicator.classList.add('hidden');
+            errorMessage.classList.remove('hidden');
+            console.error("Error loading video stats:", error);
+        });
+    }
+    
+    // Helper function to create the views chart
+    function createViewsChart(labels, data) {
+        const ctx = document.getElementById('videoViewsChart');
+        if (!ctx) {
+            console.error('Chart canvas element not found');
+            return;
+        }
+        
+        const ctxContext = ctx.getContext('2d');
+        
+        if (viewsChart) {
+            viewsChart.destroy();
+        }
+        
+        viewsChart = new Chart(ctxContext, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Views',
+                    data: data,
+                    borderColor: 'rgba(79, 70, 229, 0.8)',
+                    backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                        titleColor: 'rgba(255, 255, 255, 0.9)',
+                        bodyColor: 'rgba(255, 255, 255, 0.9)',
+                        borderColor: 'rgba(255, 255, 255, 0.1)',
+                        borderWidth: 1
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false,
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: 'rgba(255, 255, 255, 0.5)',
+                            maxRotation: 0,
+                            autoSkip: true,
+                            maxTicksLimit: 8
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: 'rgba(255, 255, 255, 0.5)',
+                            callback: function(value) {
+                                return formatCompactNumber(value);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Helper function to format numbers with commas
+    function formatNumber(num) {
+        return new Intl.NumberFormat().format(num);
+    }
+    
+    // Helper function to format numbers in compact form (K, M)
+    function formatCompactNumber(num) {
+        if (num >= 1000000) {
+            return (num / 1000000).toFixed(1) + 'M';
+        } else if (num >= 1000) {
+            return (num / 1000).toFixed(1) + 'K';
+        }
+        return num;
+    }
+    
+    // Initialize when DOM is ready
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('Dashboard script loaded'); // Debug message
+        
+        // Initialize modal elements
+        modal = document.getElementById('videoStatsModal');
+        closeButton = document.getElementById('closeVideoModal');
+        videoTitleElement = document.getElementById('modalVideoTitle');
+        videoViewsElement = document.getElementById('modalVideoViews');
+        videoWatchTimeElement = document.getElementById('modalVideoWatchTime');
+        timeRangeSelector = document.getElementById('video-time-range');
+        loadingIndicator = document.getElementById('videoStatsLoading');
+        errorMessage = document.getElementById('videoStatsError');
+        
+        // Debug - log modal element
+        console.log('Video modal element:', modal);
+        
+        // Get all video stat buttons
+        const statButtons = document.querySelectorAll('.video-stats-btn');
+        console.log('Found stat buttons:', statButtons.length); // Debug count
+        
+        // Add direct click event to each button
+        statButtons.forEach((button, index) => {
+            console.log(`Button ${index}:`, button.dataset.videoId, button.dataset.videoTitle); // Debug button data
+            
+            button.addEventListener('click', function(e) {
+                e.preventDefault(); // Prevent default behavior
+                console.log('Button clicked!', this.dataset.videoId); // Debug click
+                
+                const videoId = this.dataset.videoId;
+                const videoTitle = this.dataset.videoTitle;
+                const videoViews = this.dataset.videoViews;
+                
+                // Reset and show the modal
+                resetModal();
+                
+                // Make sure modal is visible
+                modal.style.display = 'flex';
+                modal.classList.remove('hidden');
+                
+                // Set basic info
+                videoTitleElement.textContent = videoTitle;
+                videoViewsElement.textContent = formatNumber(videoViews);
+                
+                // Estimate watch time (this is just an estimate - in a real app, get from API)
+                const estimatedWatchTimeHours = Math.round(parseInt(videoViews) * 0.003 * 10) / 10;
+                videoWatchTimeElement.textContent = `${estimatedWatchTimeHours} hours`;
+                
+                // Store current video ID
+                currentVideoId = videoId;
+                
+                // Load video stats
+                loadVideoStats(videoId, timeRangeSelector.value);
+            });
+        });
+        
+        // Close button functionality
+        if (closeButton) {
+            closeButton.addEventListener('click', function() {
+                modal.classList.add('hidden');
+                if (viewsChart) {
+                    viewsChart.destroy();
+                    viewsChart = null;
+                }
+            });
+        }
+        
+        // Close when clicking outside modal content
+        if (modal) {
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    modal.classList.add('hidden');
+                    if (viewsChart) {
+                        viewsChart.destroy();
+                        viewsChart = null;
+                    }
+                }
+            });
+        }
+        
+        // Time range change event
+        if (timeRangeSelector) {
+            timeRangeSelector.addEventListener('change', function() {
+                if (currentVideoId) {
+                    loadVideoStats(currentVideoId, this.value);
+                }
+            });
+        }
+    });
 </script>
 {% endblock %} 

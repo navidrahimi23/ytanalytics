@@ -620,17 +620,36 @@
                 modal.style.display = 'none';
             }
         });
+    });
+</script>
+
+{% if has_analytics_access and retention_data %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Store the Django template data in JavaScript variables
+        let retentionLabels, retentionData;
         
-        // Initialize retention chart if data is available
-        {% if has_analytics_access and retention_data %}
+        try {
+            // Parse JSON data safely
+            retentionLabels = JSON.parse('{{ retention_data.labels|safe }}');
+            retentionData = JSON.parse('{{ retention_data.data|safe }}');
+            console.log("Loaded retention data:", retentionLabels, retentionData);
+        } catch (error) {
+            console.error("Error parsing retention data:", error);
+            document.querySelector('.chart-container').innerHTML = '<div class="no-data-message"><p>Error loading retention data. Please refresh the page or try again later.</p></div>';
+            return;
+        }
+        
+        // Initialize retention chart
         const ctx = document.getElementById('retentionChart').getContext('2d');
-        const retentionChart = new Chart(ctx, {
+        
+        new Chart(ctx, {
             type: 'line',
             data: {
-                labels: {{ retention_data.labels|safe }},
+                labels: retentionLabels,
                 datasets: [{
                     label: 'Audience Retention',
-                    data: {{ retention_data.data|safe }},
+                    data: retentionData,
                     backgroundColor: 'rgba(52, 152, 219, 0.2)',
                     borderColor: 'rgba(52, 152, 219, 1)',
                     borderWidth: 2,
@@ -672,7 +691,7 @@
                 }
             }
         });
-        {% endif %}
     });
 </script>
+{% endif %}
 {% endblock %} 

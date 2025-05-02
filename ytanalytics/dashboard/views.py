@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout, login, authenticate
 from social_django.utils import load_strategy
 from social_django.models import UserSocialAuth
-from .youtube_analytics import get_youtube_analytics
+from .youtube_analytics import get_youtube_analytics, TimeRange
 from .youtube_api import search_channel, get_channel_stats, get_recent_video_stats
 import json
 from django.contrib import messages
@@ -26,6 +26,7 @@ from django.utils import timezone
 from django.db.models import Q
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
+from rest_framework.response import Response
 
 logger = logging.getLogger(__name__)
 
@@ -93,52 +94,37 @@ def connect_youtube_from_oauth(sender, instance, created, **kwargs):
             logger.error(f"Error connecting YouTube channel for user {instance.user.username}: {str(e)}")
             # Don't block the login flow if this fails
 
+@login_required
 def dashboard(request):
-    """
-    Main dashboard view that renders statistics and recent videos
-    """
-    # Get profile data
-    profile = request.user.userprofile
+    """Main dashboard view with YouTube analytics overview"""
+    user = request.user
+    profile = user.userprofile
     
-    # Initialize context with basic user data
+    # Check if YouTube is connected
+    if not profile.youtube_connected:
+        # Display dashboard with connection prompt
+        return render(request, 'auth/dashboard.html', {
+            'user': user,
+            'profile': profile,
+            'youtube_connected': False
+        })
+    
+    # Get analytics data
+    analytics_data = get_youtube_analytics(user)
+    
+    # Get recent videos
+    recent_videos = get_recent_videos(user, limit=10)
+    
+    # Prepare dashboard context - Simplify analytics and correct video key
     context = {
-        'user': request.user,
+        'user': user,
         'profile': profile,
-        'has_analytics_access': profile.has_analytics_access,
-        'youtube_connected': profile.youtube_connected
+        'youtube_connected': True,
+        'analytics_result': analytics_data, # Pass the whole result
+        'videos': recent_videos # Use the key 'videos' as expected by the template
     }
     
-    # If not connected to YouTube, show dashboard with connect prompt
-    if not profile.youtube_connected:
-        logger.warning(f"User {request.user.username} accessed dashboard without connecting YouTube channel")
-        messages.info(request, "Connect your YouTube channel to see your analytics and statistics.")
-        return render(request, 'auth/dashboard.html', context)
-    
-    try:
-        # Get channel statistics data
-        stats = get_channel_analytics(request.user)
-        
-        # Get recent videos
-        videos = get_recent_videos(request.user, limit=10)
-        
-        # Get mutually connected users using Link model
-        from .models import Link
-        linked_users = Link.get_linked_users(request.user)
-        linked_profiles = UserProfile.objects.filter(user__in=linked_users)
-        
-        # Update context with additional data
-        context.update({
-            'stats': stats,
-            'videos': videos,
-            'linked_users': linked_profiles[:4],  # Show only first 4 linked users
-        })
-        
-        return render(request, 'auth/dashboard.html', context)
-        
-    except Exception as e:
-        logger.error(f"Error in dashboard view for user {request.user.username}: {str(e)}")
-        messages.error(request, "An error occurred loading your dashboard. Please try again later.")
-        return render(request, 'auth/dashboard.html', context)
+    return render(request, 'auth/dashboard.html', context)
 
 def custom_logout(request):
     """Custom logout view that handles both Django and social auth logout."""
@@ -189,30 +175,6 @@ def dashboard_view(request):
     if analytics_result and analytics_result.get('needs_analytics_permission'):
         needs_analytics_permission = True
     
-    # Default context with empty data
-    context = {
-        'dates': json.dumps([]),
-        'views': json.dumps([]),
-        'watch_time': json.dumps([]),
-        'subscribers': json.dumps([]),
-        'has_channel': False,
-        'has_data': False,
-        'message': None,
-        'channel_name': None,
-        'raw_data': analytics_result,  # For debugging
-        'debug': True,  # Enable debug section
-        'user_profile': request.user.userprofile,  # Add user profile to context
-        'is_mock_data': analytics_result.get('is_mock_data', False),  # Flag for mock data
-        'has_analytics_permission': has_analytics_permission,  # Add analytics permission status
-        'needs_analytics_permission': needs_analytics_permission  # Flag to show analytics permission prompt
-    }
-    
-    # Update context based on the analytics result
-    if analytics_result:
-        context['has_channel'] = analytics_result.get('has_channel', False)
-        context['has_data'] = analytics_result.get('has_data', False)
-        context['message'] = analytics_result.get('message')
-        context['channel_name'] = analytics_result.get('channel_name')
         
         # If user has a channel and data is available, process it
         if analytics_result.get('has_data'):
@@ -238,28 +200,33 @@ def dashboard_view(request):
             total_watch_time = sum(watch_time) if watch_time else 0
             watch_time_hours = round(total_watch_time / 60, 1)  # Convert minutes to hours
             total_subscribers = sum(subscribers) if subscribers else 0
-            
-            context.update({
-                'dates': json.dumps(dates),
-                'views': json.dumps(views),
-                'watch_time': json.dumps(watch_time),
-                'subscribers': json.dumps(subscribers),
-                'total_views': total_views,
-                'watch_time_hours': watch_time_hours,
-                'total_subscribers': total_subscribers,
-            })
-    
-    return render(request, 'auth/dashboard.html', context)
 
 @login_required
 def statistics_view(request):
-    """View for the statistics page with just the graphs."""
+    """View for the statistics page. Passes initial data to the template."""
     
-    # Default empty context 
+    profile = request.user.userprofile
+    analytics_result = None
+    
+    # If user has connected their YouTube account, fetch initial analytics data (e.g., last 30 days)
+    if profile.youtube_connected:
+        try:
+            # Get analytics data for the user with a default time range
+            # The template JS will fetch updates for different ranges
+            analytics_result = get_youtube_analytics(request.user) # Uses default days=30
+            logger.info(f"Fetched initial analytics for statistics page for user {request.user.username}")
+        except Exception as e:
+            logger.error(f"Error fetching initial analytics for user {request.user.username} statistics: {str(e)}")
+            # Don't crash the page load, JS will handle showing an error
+            analytics_result = {'success': False, 'message': f"Error loading initial analytics: {str(e)}"}
+    else:
+        # If YouTube not connected, indicate this
+        analytics_result = {'success': False, 'message': 'YouTube not connected'}
+        logger.info(f"User {request.user.username} attempted to view statistics without connecting YouTube")
+        
     context = {
-        'channel_name': None,
-        'has_analytics_permission': True,  # Always set to true for testing
-        'needs_analytics_permission': False  # Don't show the permission prompt
+        'analytics_result': analytics_result, # Pass initial result (or error state)
+        'youtube_connected': profile.youtube_connected # Let template know connection status
     }
     
     return render(request, 'auth/statistics.html', context)
@@ -385,31 +352,32 @@ def view_profile(request, username):
         try:
             # For mutual links, get all-time analytics instead of just 30 days
             if not is_own_profile and link_status == 'mutual':
-                analytics_result = get_youtube_analytics(user, days=9999)  # 9999 means all-time data
+                analytics_result = get_youtube_analytics(user, time_range=TimeRange.ALL_TIME)  # Use TimeRange.ALL_TIME instead of days=9999
                 # Get recent videos for mutually linked users
                 if user.userprofile.youtube_connected and user.userprofile.youtube_channel:
                     recent_videos = get_recent_videos(user, limit=10)
             else:
                 analytics_result = get_youtube_analytics(user)
             
+            # --- Remove calculation logic - totals are now in analytics_result ---
             # Calculate summary metrics if data is available
-            if analytics_result and analytics_result.get('has_data') and analytics_result.get('basic_metrics'):
-                basic_metrics = analytics_result.get('basic_metrics', [])
-                
-                # Calculate totals
-                total_views = sum(row[1] for row in basic_metrics) if basic_metrics else 0
-                total_watch_time = sum(row[2] for row in basic_metrics) if basic_metrics else 0
-                watch_time_hours = round(total_watch_time / 60, 1)  # Convert minutes to hours
-                
-                # Sum subscribers gained (may be at index 4)
-                total_subscribers = 0
-                if basic_metrics and len(basic_metrics[0]) > 4:
-                    total_subscribers = sum(row[4] for row in basic_metrics)
-                
-                # Add summary metrics to the result
-                analytics_result['total_views'] = total_views
-                analytics_result['watch_time_hours'] = watch_time_hours
-                analytics_result['subscribers'] = total_subscribers
+            # if analytics_result and analytics_result.get('has_data') and analytics_result.get('basic_metrics'):
+            #     basic_metrics = analytics_result.get('basic_metrics', [])
+            #     
+            #     # Calculate totals
+            #     total_views = sum(row[1] for row in basic_metrics)
+            #     total_watch_time = sum(row[2] for row in basic_metrics)
+            #     watch_time_hours = round(total_watch_time / 60, 1)  # Convert minutes to hours
+            #     
+            #     # Sum subscribers gained (may be at index 4)
+            #     total_subscribers = 0
+            #     if basic_metrics and len(basic_metrics[0]) > 4:
+            #         total_subscribers = sum(row[4] for row in basic_metrics)
+            #     
+            #     # Add summary metrics to the result
+            #     analytics_result['total_views'] = total_views
+            #     analytics_result['watch_time_hours'] = watch_time_hours
+            #     analytics_result['subscribers'] = total_subscribers
                 
         except Exception as e:
             analytics_result = None
@@ -424,7 +392,6 @@ def view_profile(request, username):
         'has_data': analytics_result.get('has_data', False) if analytics_result else False,
         'channel_name': analytics_result.get('channel_name') if analytics_result else None,
         'analytics_message': analytics_result.get('message') if analytics_result else 'Could not load analytics data',
-        'is_mock_data': analytics_result.get('is_mock_data', False) if analytics_result else False,
         'show_private_stats': show_private_stats,
         'recent_videos': recent_videos,
     }
@@ -486,11 +453,27 @@ def network_view(request):
         if profile.youtube_connected and profile.youtube_channel:
             try:
                 # Always use a long timeframe to get comprehensive data
-                analytics_result = get_youtube_analytics(profile.user, days=9999)
+                analytics_result = get_youtube_analytics(profile.user, time_range=TimeRange.ALL_TIME)
                 if analytics_result and analytics_result.get('has_data', False):
-                    # Update with real data from analytics
-                    profile.subscribers = analytics_result.get('total_subscribers', profile.subscribers)
-                    profile.total_views = analytics_result.get('views', profile.total_views)
+                    # --- Remove calculation logic - Use values directly from analytics_result ---
+                    # total_views = profile.total_views # Keep default if calculation fails
+                    # subscribers = profile.subscribers # Keep default
+                    # if analytics_result.get('basic_metrics'):
+                    #     basic_metrics = analytics_result.get('basic_metrics', [])
+                    #     try:
+                    #         total_views = sum(row[1] for row in basic_metrics if len(row) > 1)
+                    #         # Sum subscribers gained (check index exists)
+                    #         if basic_metrics and len(basic_metrics[0]) > 4:
+                    #             subscribers = sum(row[4] for row in basic_metrics)
+                    #         else:
+                    #             # Fallback if subscriber data isn't in the expected column
+                    #             subscribers = analytics_result.get('total_subscribers', profile.subscribers) # Attempt fallback
+                    #     except (IndexError, TypeError) as calc_e:
+                    #         logger.error(f"Error calculating stats for {profile.user.username} in network_view: {calc_e}")
+
+                    # Update profile attributes with calculated values
+                    profile.subscribers = analytics_result.get('subscribers', profile.subscribers) # Get lifetime total
+                    profile.total_views = analytics_result.get('views', profile.total_views) # Get lifetime total
             except Exception as e:
                 logger.error(f"Error fetching analytics for user {profile.user.username}: {str(e)}")
     
@@ -517,10 +500,27 @@ def network_view(request):
             # Try to get analytics data if the user has a YouTube channel
             if profile.youtube_connected and profile.youtube_channel:
                 try:
-                    analytics_result = get_youtube_analytics(profile.user, days=9999)
+                    analytics_result = get_youtube_analytics(profile.user, time_range=TimeRange.ALL_TIME)
                     if analytics_result and analytics_result.get('has_data', False):
-                        profile.subscribers = analytics_result.get('total_subscribers', profile.subscribers)
-                        profile.total_views = analytics_result.get('views', profile.total_views)
+                        # --- Remove calculation logic - Use values directly from analytics_result ---
+                        # total_views = profile.total_views # Keep default if calculation fails
+                        # subscribers = profile.subscribers # Keep default
+                        # if analytics_result.get('basic_metrics'):
+                        #     basic_metrics = analytics_result.get('basic_metrics', [])
+                        #     try:
+                        #         total_views = sum(row[1] for row in basic_metrics if len(row) > 1)
+                        #         # Sum subscribers gained (check index exists)
+                        #         if basic_metrics and len(basic_metrics[0]) > 4:
+                        #             subscribers = sum(row[4] for row in basic_metrics)
+                        #         else:
+                        #             # Fallback if subscriber data isn't in the expected column
+                        #             subscribers = analytics_result.get('total_subscribers', profile.subscribers) # Attempt fallback
+                        #     except (IndexError, TypeError) as calc_e:
+                        #         logger.error(f"Error calculating stats for {profile.user.username} in network_view: {calc_e}")
+
+                        # Update profile attributes with calculated values
+                        profile.subscribers = analytics_result.get('subscribers', profile.subscribers) # Get lifetime total
+                        profile.total_views = analytics_result.get('views', profile.total_views) # Get lifetime total
                 except Exception as e:
                     logger.error(f"Error fetching analytics for search result {profile.user.username}: {str(e)}")
             
@@ -618,6 +618,28 @@ def signup_view(request):
     return render(request, 'auth/signup.html', {'form': form})
 
 @login_required
+def connect_accounts_view(request):
+    """View for the account connections page"""
+    profile = request.user.userprofile
+    
+    # Check if user has analytics permissions
+    has_analytics_permission = False
+    if profile.youtube_connected:
+        try:
+            social = request.user.social_auth.get(provider='google-oauth2')
+            scopes = social.extra_data.get('scope', '').split(' ')
+            if 'https://www.googleapis.com/auth/yt-analytics.readonly' in scopes:
+                has_analytics_permission = True
+        except Exception as e:
+            logger.error(f"Error checking analytics permissions: {str(e)}")
+    
+    return render(request, 'dashboard/connect_accounts.html', {
+        'user': request.user,
+        'profile': profile,
+        'has_analytics_permission': has_analytics_permission
+    })
+
+@login_required
 def connect_youtube(request):
     """Handle YouTube OAuth connection"""
     if request.GET.get('code'):
@@ -633,9 +655,6 @@ def connect_youtube(request):
             # Check if analytics scope is present
             if 'https://www.googleapis.com/auth/yt-analytics.readonly' in scopes:
                 profile.has_analytics_access = True
-                logger.info(f"User {request.user.username} has analytics permissions")
-            else:
-                logger.warning(f"User {request.user.username} lacks analytics permissions")
         except Exception as e:
             logger.error(f"Error checking analytics permissions: {str(e)}")
         
@@ -659,10 +678,6 @@ def connect_youtube(request):
     # Build the complete auth URL
     auth_url += f'?scope={encoded_scopes}&next=/dashboard/'
     
-    # Log that we're redirecting to OAuth
-    logger.info(f"Redirecting user {request.user.username} to YouTube OAuth2 login with scopes: {scopes}")
-    
-    # Return redirect to the auth URL
     return redirect(auth_url)
 
 @login_required
@@ -702,67 +717,33 @@ def privacy_policy(request):
     return render(request, 'privacy_policy.html')
 
 @login_required
-def connect_accounts_view(request):
-    """View for the Connect Accounts page"""
-    return render(request, 'auth/connect_accounts.html')
-
-@login_required
 @require_POST
 def disconnect_platform(request, platform):
-    """
-    API endpoint to disconnect a platform (YouTube, TikTok, etc.)
-    """
-    try:
-        profile = request.user.userprofile
+    """Disconnect a specific platform"""
+    if platform not in ['youtube', 'tiktok', 'instagram']:
+        return JsonResponse({'success': False, 'message': 'Invalid platform'})
+    
+    profile = request.user.userprofile
+    
+    if platform == 'youtube':
+        profile.youtube_connected = False
+        profile.youtube_channel = ''
+        profile.has_analytics_access = False
         
-        if platform == 'youtube':
-            # Get the user's social auth for Google
-            try:
-                social_auth = UserSocialAuth.objects.get(user=request.user, provider='google-oauth2')
-                
-                # Load strategy and disconnect
-                strategy = load_strategy()
-                social_auth.disconnect(strategy)
-                
-                # Update user profile
-                profile.youtube_connected = False
-                profile.youtube_channel = None
-                profile.has_analytics_access = False
-                profile.save()
-                
-                logger.info(f"User {request.user.username} disconnected YouTube account")
-                return JsonResponse({
-                    'success': True,
-                    'message': 'YouTube account disconnected successfully'
-                })
-            except UserSocialAuth.DoesNotExist:
-                # Just update the profile if the social auth is already gone
-                profile.youtube_connected = False
-                profile.youtube_channel = None
-                profile.has_analytics_access = False
-                profile.save()
-                
-                logger.info(f"User {request.user.username} disconnected YouTube account (no social auth found)")
-                return JsonResponse({
-                    'success': True,
-                    'message': 'YouTube account disconnected successfully'
-                })
-        elif platform in ['tiktok', 'instagram']:
-            return JsonResponse({
-                'success': False,
-                'error': f'{platform.title()} integration is not yet available'
-            })
-        else:
-            return JsonResponse({
-                'success': False,
-                'error': f'Unknown platform: {platform}'
-            })
-    except Exception as e:
-        logger.error(f"Error disconnecting {platform} for user {request.user.username}: {str(e)}")
-        return JsonResponse({
-            'success': False,
-            'error': str(e)
-        }, status=500)
+        # Also remove OAuth token if present
+        try:
+            social_auth = request.user.social_auth.filter(provider='google-oauth2')
+            if social_auth.exists():
+                social_auth.delete()
+        except Exception as e:
+            logger.error(f"Error removing OAuth token: {str(e)}")
+    
+    profile.save()
+    
+    return JsonResponse({
+        'success': True,
+        'message': f'{platform.title()} account disconnected successfully'
+    })
 
 @login_required
 def youtube_search_view(request):
@@ -939,243 +920,153 @@ def channel_stats_api(request, channel_id):
         'time_range': time_range
     })
 
+
 @login_required
-@require_GET
-def statistics_api(request):
-    """API endpoint to get YouTube analytics data for different time ranges"""
-    days = request.GET.get('days', '30')
-    
-    # Handle 'all' as a special case
-    if days == 'all':
-        # Use a very large number for all time data
-        days = 9999
-    else:
-        try:
-            days = int(days)
-        except ValueError:
-            days = 30  # Default to 30 days if invalid input
+def channel_history_api(request, channel_id):
+    """API endpoint to retrieve historical stats for a channel"""
+    metric = request.GET.get('metric', 'subscribers')
+    time_range = request.GET.get('range', '30')
     
     try:
-        # Get profile data
-        profile = request.user.userprofile
-        
-        # If not connected to YouTube, return empty stats but with success flag
-        if not profile.youtube_connected:
-            return JsonResponse({
-                'success': True,
-                'subscribers': 0,
-                'subscriber_change': 0,
-                'views': 0,
-                'view_change': 0,
-                'watch_time': 0,
-                'watch_time_change': 0,
-                'likes': 0,
-                'like_change': 0
-            })
-        
-        # Get analytics data for the specified time range
-        # Always use mock data on error to ensure we show something
-        analytics_result = get_youtube_analytics(request.user, days=days)
-        
-        if analytics_result and analytics_result.get('has_data'):
-            basic_metrics = analytics_result.get('basic_metrics', [])
-            
-            # Calculate totals
-            total_views = sum(row[1] for row in basic_metrics)
-            total_watch_time = sum(row[2] for row in basic_metrics)
-            total_subscribers = sum(row[4] for row in basic_metrics) if len(basic_metrics[0]) > 4 else 0
-            
-            # Convert watch time to hours
-            watch_time_hours = round(total_watch_time / 60, 1)
-            
-            # Calculate likes (placeholder using 5% of views)
-            total_likes = int(total_views * 0.05)
-            
-            # Calculate changes by comparing recent data to previous period
-            if len(basic_metrics) > 1:
-                half_point = len(basic_metrics) // 2
-                recent_period = basic_metrics[half_point:]
-                older_period = basic_metrics[:half_point]
-                
-                view_change = sum(row[1] for row in recent_period) - sum(row[1] for row in older_period)
-                watch_time_change = round((sum(row[2] for row in recent_period) - sum(row[2] for row in older_period)) / 60, 1)
-                sub_change = sum(row[4] for row in recent_period) - sum(row[4] for row in older_period) if len(basic_metrics[0]) > 4 else 0
-                like_change = int(view_change * 0.05)
-            else:
-                view_change = 0
-                watch_time_change = 0
-                sub_change = 0
-                like_change = 0
-            
-            # Also include the raw data for charts
-            dates = [row[0] for row in basic_metrics]
-            views_data = [row[1] for row in basic_metrics]
-            watch_time_data = [row[2] for row in basic_metrics]
-            subscribers_data = [row[4] for row in basic_metrics] if len(basic_metrics[0]) > 4 else [0] * len(basic_metrics)
-            
-            return JsonResponse({
-                'success': True,
-                'subscribers': total_subscribers,
-                'subscriber_change': sub_change,
-                'views': total_views,
-                'view_change': view_change,
-                'watch_time': watch_time_hours,
-                'watch_time_change': watch_time_change,
-                'likes': total_likes,
-                'like_change': like_change,
-                'dates': dates,
-                'views_data': views_data,
-                'watch_time_data': watch_time_data,
-                'subscribers_data': subscribers_data,
-                'is_mock_data': analytics_result.get('is_mock_data', False)
-            })
-        else:
-            # Return empty stats if no data available but with success flag
-            return JsonResponse({
-                'success': True,
-                'subscribers': 0,
-                'subscriber_change': 0,
-                'views': 0,
-                'view_change': 0,
-                'watch_time': 0,
-                'watch_time_change': 0,
-                'likes': 0,
-                'like_change': 0,
-                'dates': [],
-                'views_data': [],
-                'watch_time_data': [],
-                'subscribers_data': []
-            })
-            
-    except Exception as e:
-        logger.error(f"Error in statistics_api: {str(e)}")
+        time_range = int(time_range)
+    except ValueError:
+        time_range = 30
+    
+    # Get historical stats from the database
+    cutoff_date = timezone.now() - timedelta(days=time_range)
+    stats = ChannelStats.objects.filter(channel_id=channel_id, date__gte=cutoff_date).order_by('date')
+    
+    # Format dates and extract the requested metric
+    dates = [stat.date.strftime('%Y-%m-%d') for stat in stats]
+    
+    if metric == 'subscribers':
+        values = [stat.subscribers for stat in stats]
+        metric_label = 'Subscribers'
+    else:  # views
+        values = [stat.views for stat in stats]
+        metric_label = 'Views'
+    
+    # If we have less than 2 data points, we don't have enough for a trend
+    if len(dates) < 2:
         return JsonResponse({
             'success': False,
-            'error': str(e)
-        }, status=500)
+            'message': 'Not enough historical data available for the selected time range.',
+            'data_points': len(dates)
+        })
+    
+    return JsonResponse({
+        'success': True,
+        'channel_id': channel_id,
+        'dates': dates,
+        'values': values,
+        'metric': metric,
+        'metric_label': metric_label,
+        'time_range': time_range
+    })
+
+def empty_stats_response():
+    """Helper function to return empty stats with success flag"""
+    return JsonResponse({
+        'success': True,
+        'subscribers': 0,
+        'subscriber_change': 0,
+        'views': 0,
+        'view_change': 0,
+        'watch_time': 0,
+        'watch_time_change': 0,
+        'likes': 0,
+        'like_change': 0,
+        'dates': [],
+        'views_data': [],
+        'watch_time_data': [],
+        'subscribers_data': []
+    })
 
 @login_required
 def permissions_info(request):
     """View for the permissions info page explaining why we need analytics access"""
     return render(request, 'auth/permissions_info.html')
 
-@login_required
-def grant_analytics_access(request):
-    """Handle YouTube Analytics OAuth permission upgrade"""
-    # Build the OAuth URL manually with specific scopes
-    auth_url = '/auth/login/google-oauth2/'
-    
-    # Specify the exact scopes needed for analytics
-    scopes = [
-        'https://www.googleapis.com/auth/yt-analytics.readonly',
-        'https://www.googleapis.com/auth/yt-analytics-monetary.readonly',
-        'https://www.googleapis.com/auth/youtube.readonly',
-        'https://www.googleapis.com/auth/youtube'
-    ]
-    
-    # URL encode the scopes
-    import urllib.parse
-    encoded_scopes = urllib.parse.quote(' '.join(scopes))
-    
-    # Add specific scopes and force consent to ensure we get the new permission
-    auth_url += f'?scope={encoded_scopes}&prompt=consent&next=/dashboard/'
-    
-    # Log that we're redirecting to OAuth for analytics
-    logger.info(f"Redirecting user {request.user.username} to YouTube Analytics OAuth2 upgrade with scopes: {scopes}")
-    
-    # Return redirect to the auth URL
-    return redirect(auth_url)
 
-@login_required
-def request_analytics_access(request):
-    """
-    View to redirect users to request analytics access
-    """
+def get_video_details(user, video_id):
+    """Get detailed information about a specific video"""
+    from .youtube_analytics import get_user_credentials
+    from .youtube_api import build_youtube_service
+    
     try:
-        # Get the configuration for analytics permissions OAuth
-        analytics_scopes = settings.YOUTUBE_ANALYTICS_SCOPES
-        strategy = load_strategy()
+        profile = user.userprofile
         
-        # Get Google social auth for this user
-        social_auth = UserSocialAuth.objects.get(user=request.user, provider='google-oauth2')
+        # If user has no YouTube channel, return None
+        if not profile.youtube_connected:
+            return None
+            
+        # Get credentials for API access
+        credentials = get_user_credentials(user)
+        if not credentials:
+            return None
         
-        # Generate the authorization URL with analytics scope
-        redirect_uri = f"{settings.SOCIAL_AUTH_URL_PREFIX}/complete/google-oauth2/"
-        auth_url = social_auth.get_auth_url(strategy, redirect_uri, extra_scope=analytics_scopes)
+        # Build YouTube API client
+        youtube = build('youtube', 'v3', credentials=credentials)
         
-        logger.info(f"User {request.user.username} requesting analytics access")
-        return redirect(auth_url)
+        # Get video details
+        video_response = youtube.videos().list(
+            part='snippet,statistics,contentDetails',
+            id=video_id
+        ).execute()
         
+        if not video_response.get('items'):
+            return None
+            
+        # Process video data
+        item = video_response['items'][0]
+        snippet = item['snippet']
+        statistics = item['statistics']
+        content_details = item['contentDetails']
+        
+        # Parse duration
+        duration = content_details['duration']
+        duration_str = parse_duration(duration)
+        
+        # Get video published date
+        published_date = datetime.fromisoformat(snippet['publishedAt'].replace('Z', '+00:00'))
+        
+        # Return formatted video details
+        return {
+            'id': video_id,
+            'title': snippet['title'],
+            'description': snippet.get('description', ''),
+            'channel_id': snippet['channelId'],
+            'channel_title': snippet['channelTitle'],
+            'published_at': published_date,
+            'published_at_str': published_date.strftime('%b %d, %Y'),
+            'thumbnail': snippet['thumbnails']['high']['url'],
+            'views': int(statistics.get('viewCount', 0)),
+            'likes': int(statistics.get('likeCount', 0)),
+            'comments': int(statistics.get('commentCount', 0)),
+            'duration': duration_str,
+            'duration_seconds': parse_duration(duration, return_seconds=True)
+        }
     except Exception as e:
-        logger.error(f"Error requesting analytics access for user {request.user.username}: {str(e)}")
-        messages.error(request, "An error occurred while requesting analytics access. Please try again later.")
-        return redirect('dashboard')
+        logger.error(f"Error getting video details for {video_id}: {str(e)}")
+        return None
 
 @login_required
-def analytics_info(request):
-    """
-    Displays information about analytics permissions
-    """
-    return render(request, 'auth/analytics_info.html', {
+def video_statistics(request, video_id):
+    """View for displaying video statistics"""
+    # Get video details
+    video_details = get_video_details(request.user, video_id)
+    if not video_details:
+        messages.error(request, "Video not found or not accessible.")
+        return redirect('dashboard')
+    
+    return render(request, 'dashboard/video_statistics.html', {
+        'video': video_details,
         'user': request.user,
         'profile': request.user.userprofile
     })
 
-@login_required
-def video_statistics(request, video_id):
-    """
-    Display detailed statistics for a specific video
-    """
-    try:
-        # Get user's profile
-        profile = request.user.userprofile
-        
-        # Check if connected to YouTube
-        if not profile.youtube_connected:
-            logger.warning(f"User {request.user.username} attempted to access video stats without connecting YouTube")
-            return redirect('connect_account')
-            
-        # Check analytics permission status
-        has_analytics_access = profile.has_analytics_access
-        
-        # Get basic video details and metrics
-        video_details = get_video_details(request.user, video_id)
-        
-        if not video_details:
-            messages.error(request, "Could not find that video. Please try again.")
-            return redirect('dashboard')
-            
-        # Get retention data if user has analytics access
-        retention_data = None
-        if has_analytics_access:
-            retention_data = get_retention_data(request.user, video_id)
-            
-        # Prepare context
-        context = {
-            'user': request.user,
-            'profile': profile,
-            'video': video_details,
-            'retention_data': retention_data,
-            'has_analytics_access': has_analytics_access,
-        }
-        
-        return render(request, 'auth/video_statistics.html', context)
-        
-    except Exception as e:
-        logger.error(f"Error in video statistics view for user {request.user.username}, video {video_id}: {str(e)}")
-        messages.error(request, "An error occurred loading video statistics. Please try again later.")
-        return redirect('dashboard')
-
 def get_channel_analytics(user):
-    """
-    Get channel analytics for the dashboard display
-    
-    Parameters:
-    - user: The Django user object
-    
-    Returns:
-    - Dictionary containing formatted stats for dashboard display
-    """
+    """Get channel analytics for the dashboard display"""
     # Get analytics data from YouTube API
     analytics_result = get_youtube_analytics(user)
     
@@ -1193,137 +1084,57 @@ def get_channel_analytics(user):
     
     # If we have data, process it for display
     if analytics_result and analytics_result.get('has_data'):
-        basic_metrics = analytics_result.get('basic_metrics', [])
-        
-        if basic_metrics:
-            # Calculate totals
-            views = sum(row[1] for row in basic_metrics)
-            watch_time = sum(row[2] for row in basic_metrics) if len(basic_metrics[0]) > 2 else 0
-            subscribers = sum(row[4] for row in basic_metrics) if len(basic_metrics[0]) > 4 else 0
-            
-            # Convert watch time to hours
-            watch_time_hours = round(watch_time / 60, 1) if watch_time else 0
-            
-            # For like count, we don't have it directly in analytics, so use a derived metric
-            # In a real app, you'd get this from the videos API
-            likes = int(views * 0.05)  # Placeholder assumption: 5% of views result in likes
-            
-            # Calculate changes by comparing recent data (last 7 days) to older data
-            if len(basic_metrics) > 7:
-                recent_period = basic_metrics[-7:]
-                older_period = basic_metrics[-14:-7]
-                
-                recent_views = sum(row[1] for row in recent_period)
-                older_views = sum(row[1] for row in older_period)
-                view_change = recent_views - older_views
-                
-                recent_watch_time = sum(row[2] for row in recent_period) if len(basic_metrics[0]) > 2 else 0
-                older_watch_time = sum(row[2] for row in older_period) if len(basic_metrics[0]) > 2 else 0
-                watch_time_change = round((recent_watch_time - older_watch_time) / 60, 1)
-                
-                recent_subs = sum(row[4] for row in recent_period) if len(basic_metrics[0]) > 4 else 0
-                older_subs = sum(row[4] for row in older_period) if len(basic_metrics[0]) > 4 else 0
-                sub_change = recent_subs - older_subs
-                
-                # Calculate like change (using our derived metric)
-                like_change = int(view_change * 0.05)
-            else:
-                view_change = 0
-                watch_time_change = 0
-                sub_change = 0
-                like_change = 0
-            
-            # Update stats dictionary
-            stats.update({
-                'subscribers': subscribers,
-                'views': views,
-                'watch_time': watch_time_hours,
-                'likes': likes,
-                'subscriber_change': sub_change,
-                'view_change': view_change,
-                'watch_time_change': watch_time_change,
-                'like_change': like_change
-            })
+        stats = {
+            'subscribers': analytics_result.get('total_subscribers', 0),
+            'views': analytics_result.get('views', 0),
+            'watch_time': analytics_result.get('watch_time', 0),
+            'subscriber_change': analytics_result.get('net_subscriber_change', 0),
+            'view_change': analytics_result.get('views_change', 0),
+            'watch_time_change': analytics_result.get('watch_time_change', 0),
+            'dates': analytics_result.get('dates', []),
+            'views_data': analytics_result.get('views_data', []),
+            'watch_time_data': analytics_result.get('watch_time_data', []),
+            'subscribers_data': analytics_result.get('daily_net_subscribers_data', []),
+            'likes': analytics_result.get('likes', 0),
+            'like_change': analytics_result.get('like_change', 0)
+        }
     
     return stats
 
 def get_recent_videos(user, limit=10):
-    """
-    Get recent videos for a user's channel
+    """Get recent videos from a user's YouTube channel"""
+    from .youtube_api import get_recent_video_stats
     
-    Parameters:
-    - user: The Django user object
-    - limit: Maximum number of videos to return
-    
-    Returns:
-    - List of video objects with details
-    """
     try:
+        # Check if user has YouTube connected
         profile = user.userprofile
-        
-        # If user has no YouTube channel, return empty list
         if not profile.youtube_connected or not profile.youtube_channel:
             return []
-            
-        # Get credentials for API access
-        social = user.social_auth.get(provider='google-oauth2')
-        access_token = social.get_access_token(load_strategy())
-        refresh_token = social.extra_data.get('refresh_token')
-        client_id = social.extra_data.get('client_id')
-        client_secret = social.extra_data.get('client_secret')
         
-        # Create credentials object
-        credentials = Credentials(
-            token=access_token,
-            refresh_token=refresh_token,
-            token_uri='https://oauth2.googleapis.com/token',
-            client_id=client_id,
-            client_secret=client_secret
-        )
+        # Get videos using the optimized API function
+        result = get_recent_video_stats(profile.youtube_channel, max_results=limit)
         
-        # Build YouTube API client
-        youtube = build('youtube', 'v3', credentials=credentials)
-        
-        # Get channel videos
-        search_response = youtube.search().list(
-            part='snippet',
-            channelId=profile.youtube_channel,
-            maxResults=limit,
-            order='date',
-            type='video'
-        ).execute()
-        
-        if not search_response.get('items'):
+        if not result.get('success', False):
             return []
-            
-        # Get video details including statistics
-        video_ids = [item['id']['videoId'] for item in search_response['items']]
-        videos_response = youtube.videos().list(
-            part='snippet,statistics,contentDetails',
-            id=','.join(video_ids)
-        ).execute()
         
-        # Process and format video data
-        videos = []
-        for item in videos_response.get('items', []):
-            # Parse duration to a human-readable format
-            duration = item['contentDetails']['duration']  # ISO 8601 format
-            duration_str = parse_duration(duration)
-            
-            videos.append({
-                'id': item['id'],
-                'title': item['snippet']['title'],
-                'thumbnail': item['snippet']['thumbnails']['high']['url'],
-                'published_at': item['snippet']['publishedAt'],
-                'duration': duration_str,
-                'views': int(item['statistics'].get('viewCount', 0)),
-                'likes': int(item['statistics'].get('likeCount', 0)),
-                'comments': int(item['statistics'].get('commentCount', 0)),
-                'url': f"https://www.youtube.com/watch?v={item['id']}"
+        videos = result.get('videos', [])
+        
+        # Process videos into a consistent format
+        formatted_videos = []
+        for video in videos:
+            formatted_videos.append({
+                'id': video['id'],
+                'title': video['title'],
+                'thumbnail': video['thumbnail'],
+                'published_at': video['published_at'],
+                'views': video['view_count'],
+                'likes': video['like_count'],
+                'comments': video['comment_count'],
+                'url': video['url'],
+                'duration': video['duration']
             })
         
-        return videos
-        
+        return formatted_videos
     except Exception as e:
         logger.error(f"Error fetching recent videos for user {user.username}: {str(e)}")
         return []
@@ -1375,4 +1186,43 @@ from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
+
+@login_required
+@require_GET
+def analytics_api(request):
+    """API endpoint for getting aggregated analytics data for the current user's YouTube channel."""
+    print("\n\n==== ANALYTICS API CALLED ====\n\n")
+    
+    # Get the time range from the request, defaulting to 30 days
+    time_range = request.GET.get('range', '30')
+    
+    # Log request information for debugging
+    logger.info(f"Analytics API called by user {request.user.username}")
+    logger.info(f"Request GET params: {dict(request.GET)}")
+    
+    # Convert time_range to appropriate format
+    if time_range == 'all':
+        # Use TimeRange enum for all time
+        from .youtube_analytics import TimeRange
+        analytics_result = get_youtube_analytics(request.user, time_range=TimeRange.ALL_TIME)
+    else:
+        try:
+            # Try to convert to integer days
+            days = int(time_range)
+            analytics_result = get_youtube_analytics(request.user, days=days)
+        except ValueError:
+            # Default to 30 days if invalid input
+            logger.warning(f"Invalid time range value: {time_range}, defaulting to 30 days")
+            analytics_result = get_youtube_analytics(request.user, days=30)
+    
+    # Log the result for debugging
+    success = analytics_result.get('success', False)
+    logger.info(f"Analytics API success: {success}")
+    
+    if not success:
+        error_message = analytics_result.get('message', 'Unknown error')
+        logger.warning(f"Analytics API error: {error_message}")
+    
+    # Return the analytics result directly - it's already formatted correctly
+    return JsonResponse(analytics_result)
 
