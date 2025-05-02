@@ -1,6 +1,4 @@
-settings.py/
-.env/
-.venv/
-*.pyc
-__pycache__/
-db.sqlite3
+ytanalytics/.env
+ytanalytics/.venv
+ytanalytics/settings.py
+/db.sqlite3
